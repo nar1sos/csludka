@@ -866,17 +866,14 @@ function renderUpgradeMyInventory() {
   grid.innerHTML = '';
   sorted.forEach(item => {
     const d = document.createElement('div');
-    d.innerHTML = createUpgradeSquareTileHTML(
-      item.card,
-      item.edition || 'normal',
-      item.wear || 'FN',
-      item.uid === upgSelectedSourceUid,
-      `onclick="selectUpgradeSource('${item.uid}')"`,
-      `data-upg-uid="${item.uid}"`
-    );
+    d.innerHTML = createSkinTileHTML(item.card, item.edition || 'normal', item.wear || 'FN', {
+      variantClass: 'upg-my-tile',
+      isSelected: item.uid === upgSelectedSourceUid,
+      extraAttr: `data-upg-uid="${item.uid}"`,
+      clickAttr: `onclick="selectUpgradeSource('${item.uid}')"`
+    });
     if (d.firstElementChild) grid.appendChild(d.firstElementChild);
   });
-  appendEmptyUpgradeSlots(grid, sorted.length, 3);
 }
 
 function formatRubPrice(val) {
@@ -894,24 +891,30 @@ function resetUpgradePriceFilter() {
   renderUpgradeTargets();
 }
 
-function createUpgradeTargetTileHTML(card, edition = 'normal', wearCode = 'FN', isSelected = false) {
+function createSkinTileHTML(card, edition = 'normal', wearCode = 'FN', opts = {}) {
   const rar = getRarityObj(card.rarity);
   const price = getSkinPrice(card, edition, wearCode);
   const gradCSS = buildRarityGradientCSS(rar);
-  const selClass = isSelected ? 'selected' : '';
+  const variantClass = opts.variantClass || 'upg-target-tile';
+  const selClass = opts.isSelected ? 'selected' : '';
+  const extraClass = opts.extraClass || '';
+  const clickAttr = opts.clickAttr || '';
+  const extraAttr = opts.extraAttr || '';
+  const footerExtraHTML = opts.footerExtraHTML || '';
+
   const weaponLine = edition === 'stattrak'
     ? `StatTrak™ ${card.weapon || 'Weapon'}`
     : edition === 'souvenir'
       ? `★ ${card.weapon || 'Weapon'}`
       : (card.weapon || 'Weapon');
   const skinName = card.name || 'Скин';
-  const barColor = rar?.color || '#d946ef';
+  const barColor = rar?.color || '#eab308';
 
   return `
-    <div class="upg-target-tile ${selClass}"
+    <div class="skin-tile-card ${variantClass} ${selClass} ${extraClass}"
          style="--rar-color: ${rar.color}; --rar-bg: ${rar.bg}; --rar-gradient: ${gradCSS}; --rar-bar: ${barColor}; --rar-bar-glow: ${barColor};"
-         data-upg-target="${card.id}_${edition}_${wearCode}"
-         onclick="selectUpgradeTarget('${card.id}', '${edition}', '${wearCode}')">
+         ${extraAttr}
+         ${clickAttr}>
       <div class="inv-tile-price">${formatRubPrice(price)}</div>
       <div class="inv-tile-radar"></div>
       <img class="inv-tile-img" loading="lazy" decoding="async" draggable="false"
@@ -920,6 +923,7 @@ function createUpgradeTargetTileHTML(card, edition = 'normal', wearCode = 'FN', 
       <div class="inv-tile-footer">
         <div class="inv-tile-weapon" title="${weaponLine}">${weaponLine}</div>
         <div class="inv-tile-name" title="${skinName}">${skinName}</div>
+        ${footerExtraHTML}
       </div>
       <div class="inv-tile-rarity-bar"></div>
     </div>
@@ -975,7 +979,12 @@ function renderUpgradeTargets() {
   sorted.forEach(t => {
     const sel = t.card.id === upgSelectedTargetId && t.edition === upgSelectedTargetEdition && t.wear === upgSelectedTargetWear;
     const d = document.createElement('div');
-    d.innerHTML = createUpgradeTargetTileHTML(t.card, t.edition, t.wear, sel);
+    d.innerHTML = createSkinTileHTML(t.card, t.edition, t.wear, {
+      variantClass: 'upg-target-tile',
+      isSelected: sel,
+      extraAttr: `data-upg-target="${t.card.id}_${t.edition}_${t.wear}"`,
+      clickAttr: `onclick="selectUpgradeTarget('${t.card.id}', '${t.edition}', '${t.wear}')"`
+    });
     if (d.firstElementChild) grid.appendChild(d.firstElementChild);
   });
 }
@@ -984,7 +993,7 @@ function selectUpgradeSource(uid) {
   if (isUpgrading) return;
   SoundFX.click();
   upgSelectedSourceUid = uid;
-  document.querySelectorAll('#upgrade-my-cards .upg-square-tile').forEach(el => el.classList.toggle('selected', el.dataset.upgUid === uid));
+  document.querySelectorAll('#upgrade-my-cards .upg-my-tile').forEach(el => el.classList.toggle('selected', el.dataset.upgUid === uid));
   updateUpgradeSlotsAndChance();
 }
 
@@ -1294,8 +1303,12 @@ function renderCollection() {
     const ed = item.edition || 'normal';
     const wr = item.wear || 'FN';
     const price = getSkinPrice(item.card, ed, wr);
-    const sellBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;" onclick="event.stopPropagation(); sellInventoryCard('${item.uid}')">Продать за ${price} ₽</button>`;
-    return createCardHTML(item.card, ed, wr, '', `onclick="openCard3DModal('${item.card.id}', '${ed}', '${wr}')"`, sellBtn);
+    const sellBtn = `<button class="secondary-btn inv-sell-btn" onclick="event.stopPropagation(); sellInventoryCard('${item.uid}')">Продать за ${formatRubPrice(price)}</button>`;
+    return createSkinTileHTML(item.card, ed, wr, {
+      variantClass: 'inv-tile-card',
+      clickAttr: `onclick="openCard3DModal('${item.card.id}', '${ed}', '${wr}')"`,
+      footerExtraHTML: sellBtn
+    });
   }).join('');
 }
 
