@@ -253,6 +253,8 @@ function saveState(markCatalogDirty = false) {
 function updateCloudSyncBadge() {
   const btn = document.getElementById('push-cloud-catalog-btn');
   if (btn) btn.textContent = hasLocalCatalogEdits ? '☁ Залить в облако (*)' : '☁ Залить всё в облако';
+  const topBtn = document.getElementById('topbar-cloud-upload-btn');
+  if (topBtn) topBtn.textContent = hasLocalCatalogEdits ? '☁ Залить в облако (*)' : '☁ Залить в облако';
 }
 
 function updateTopBar() {
@@ -468,6 +470,9 @@ async function pushCatalogToCloud() {
   const cfg = getEffectiveCloudConfig();
   if (!cfg.binId || !cfg.apiKey) {
     setAdminBalanceStatus('Укажи Bin ID и X-Master-Key в блоке JSONBin.io', true);
+    if (document.getElementById('tab-admin')?.classList.contains('hidden')) {
+      alert('Укажи Bin ID и X-Master-Key в админке (раздел «Облачная синхронизация»)!');
+    }
     return;
   }
 
@@ -1217,25 +1222,103 @@ function confirmTrade() {
 }
 
 // === ИНВЕНТАРЬ ===
+function formatRubPrice(val) {
+  return Math.round(Number(val) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₽';
+}
+
+function resetCollectionPriceFilter() {
+  SoundFX.click();
+  const minEl = document.getElementById('col-min-price');
+  const maxEl = document.getElementById('col-max-price');
+  const nameEl = document.getElementById('col-search-name');
+  if (minEl) minEl.value = '';
+  if (maxEl) maxEl.value = '';
+  if (nameEl) nameEl.value = '';
+  renderCollection();
+}
+
+function createInventoryTileHTML(item, card, edition = 'normal', wearCode = 'FN') {
+  const rar = getRarityObj(card.rarity);
+  const price = getSkinPrice(card, edition, wearCode);
+  const gradCSS = buildRarityGradientCSS(rar);
+  const weaponLine = edition === 'stattrak'
+    ? `StatTrak™ ${card.weapon || 'Weapon'}`
+    : edition === 'souvenir'
+      ? `★ ${card.weapon || 'Weapon'}`
+      : (card.weapon || 'Weapon');
+  const skinName = card.name || 'Скин';
+  const barColor = rar?.color || '#d946ef';
+  const barGlow = rar?.color || '#d946ef';
+
+  return `
+    <div class="inv-tile-wrap" data-uid="${item.uid}">
+      <div class="inv-skin-tile"
+           style="--rar-color: ${rar.color}; --rar-bg: ${rar.bg}; --rar-gradient: ${gradCSS}; --rar-bar: ${barColor}; --rar-bar-glow: ${barGlow};">
+        <div class="inv-tile-price">${formatRubPrice(price)}</div>
+        <div class="inv-tile-radar"></div>
+        <img class="inv-tile-img" loading="lazy" decoding="async" draggable="false"
+             src="${card.img}" alt="${formatSkinTitle(card)}"
+             onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'">
+        <div class="inv-tile-footer">
+          <div class="inv-tile-weapon" title="${weaponLine}">${weaponLine}</div>
+          <div class="inv-tile-name" title="${skinName}">${skinName}</div>
+        </div>
+        <div class="inv-tile-rarity-bar"></div>
+      </div>
+      <button type="button" class="secondary-btn inv-tile-sell-btn" onclick="sellInventoryCard('${item.uid}')">
+        Продать за ${formatRubPrice(price)}
+      </button>
+    </div>
+  `;
+}
+
 function renderCollection() {
   const sel = document.getElementById('sell-rarity-select');
-  if (sel) sel.innerHTML = state.rarities.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+  if (sel) {
+    const prevVal = sel.value;
+    sel.innerHTML = state.rarities.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+    if (prevVal && state.rarities.some(r => r.id === prevVal)) sel.value = prevVal;
+  }
 
   const sortMode = document.getElementById('col-sort').value;
+  const rawMin = document.getElementById('col-min-price')?.value;
+  const rawMax = document.getElementById('col-max-price')?.value;
+  const searchName = (document.getElementById('col-search-name')?.value || '').trim().toLowerCase();
+
+  const minPrice = rawMin !== undefined && String(rawMin).trim() !== '' ? Number(rawMin) : null;
+  const maxPrice = rawMax !== undefined && String(rawMax).trim() !== '' ? Number(rawMax) : null;
+
   const mapped = state.inventory.map(it => ({ ...it, card: getCardById(it.cardId) })).filter(x => x.card);
   const totalVal = mapped.reduce((s, x) => s + getSkinPrice(x.card, x.edition || 'normal', x.wear || 'FN'), 0);
 
   document.getElementById('stat-total-cards').textContent = mapped.length;
-  document.getElementById('stat-inv-value').textContent = totalVal + ' ₽';
+  document.getElementById('stat-inv-value').textContent = formatRubPrice(totalVal);
   document.getElementById('stat-opened').textContent = state.stats.opened;
   document.getElementById('stat-upgrades').textContent = state.stats.upgrades;
 
-  document.getElementById('collection-grid').innerHTML = sortItems(mapped, sortMode).map(item => {
+  const filtered = mapped.filter(item => {
     const ed = item.edition || 'normal';
     const wr = item.wear || 'FN';
     const price = getSkinPrice(item.card, ed, wr);
-    const sellBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;" onclick="event.stopPropagation(); sellInventoryCard('${item.uid}')">Продать за ${price} ₽</button>`;
-    return createCardHTML(item.card, ed, wr, '', `onclick="openCard3DModal('${item.card.id}', '${ed}', '${wr}')"`, sellBtn);
+    if (minPrice !== null && Number.isFinite(minPrice) && price < minPrice) return false;
+    if (maxPrice !== null && Number.isFinite(maxPrice) && price > maxPrice) return false;
+    if (searchName) {
+      const hay = `${item.card.weapon || ''} ${item.card.name || ''} ${wr} ${ed}`.toLowerCase();
+      if (!hay.includes(searchName)) return false;
+    }
+    return true;
+  });
+
+  const grid = document.getElementById('collection-grid');
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="hint-text" style="grid-column:1/-1;text-align:center;padding:24px;">По заданным параметрам скинов не найдено</div>`;
+    return;
+  }
+
+  grid.innerHTML = sortItems(filtered, sortMode).map(item => {
+    const ed = item.edition || 'normal';
+    const wr = item.wear || 'FN';
+    return createInventoryTileHTML(item, item.card, ed, wr);
   }).join('');
 }
 
