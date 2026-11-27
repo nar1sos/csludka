@@ -349,7 +349,7 @@ function sortItems(items, sortMode) {
   });
 }
 
-// === КАРТОЧКА СКИНА В СТИЛЕ ГД ЛУДКИ ===
+// === КАРТОЧКА СКИНА ===
 function createSkinTileHTML(skin, edition = 'normal', wearCode = 'FN', extraClass = '', clickAttr = '', actionBtnHTML = '') {
   const rar = getRarityObj(skin.rarity);
   const price = getSkinPrice(skin, edition, wearCode);
