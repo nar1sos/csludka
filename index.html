@@ -256,7 +256,7 @@
             <button class="secondary-btn" onclick="sellAllDuplicates()">Продать дубликаты</button>
             <select id="sell-rarity-select"></select>
             <button class="secondary-btn" onclick="sellBySelectedRarity()">Продать редкость</button>
-            <button class="secondary-btn" style="color:#f87171;" onclick="sellAllInventoryCards()">Продать всё</button>
+            <button class="secondary-btn" style="color:#ff5277;" onclick="sellAllInventoryCards()">Продать всё</button>
           </div>
         </div>
 
@@ -440,7 +440,7 @@
                 <div class="admin-row" style="margin-top:10px;">
                   <button class="primary-btn" onclick="saveEditedSkin()">Сохранить изменения</button>
                   <button class="secondary-btn" onclick="cancelEditSkin()">Отмена</button>
-                  <button class="secondary-btn" style="color:#f87171;" onclick="deleteEditingSkin()">Удалить скин</button>
+                  <button class="secondary-btn" style="color:#ff5277;" onclick="deleteEditingSkin()">Удалить скин</button>
                 </div>
               </div>
               <div id="edit-skin-preview" class="creator-preview-box"></div>
@@ -482,7 +482,7 @@
                 <div class="admin-row" style="margin-top:10px;">
                   <button class="primary-btn" onclick="saveEditedCase()">Сохранить кейс</button>
                   <button class="secondary-btn" onclick="cancelEditCase()">Отмена</button>
-                  <button class="secondary-btn" style="color:#f87171;" onclick="deleteEditingCase()">Удалить кейс</button>
+                  <button class="secondary-btn" style="color:#ff5277;" onclick="deleteEditingCase()">Удалить кейс</button>
                 </div>
               </div>
               <div id="edit-case-preview" class="creator-preview-box"></div>
@@ -515,7 +515,7 @@
     </div>
   </div>
 
-  <!-- МОДАЛКА ХАРАКТЕРИСТИК СКИНА (СТАТИЧНАЯ КАРТИНКА БЕЗ КРУЧЕНИЯ И БЕЗ КАРТЫ) -->
+  <!-- МОДАЛКА ХАРАКТЕРИСТИК СКИНА (СТАТИЧНАЯ КАРТИНКА + ХАРАКТЕРИСТИКИ) -->
   <div id="skin-preview-modal" class="modal hidden" onclick="closeSkinPreviewModal(event)">
     <div class="skin-detail-modal-card" id="skin-detail-card" onclick="event.stopPropagation()">
       <button class="modal-close-x" onclick="closeSkinPreviewModal()">✕</button>
