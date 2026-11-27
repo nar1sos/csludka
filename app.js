@@ -337,6 +337,7 @@ function sortItems(items, sortMode) {
   });
 }
 
+// === ПЛИТКА СКИНА В ТОЧНОМ СТИЛЕ СКРИНШОТА ===
 function createSkinTileHTML(skin, edition = 'normal', wearCode = 'FN', extraClass = '', clickAttr = '', actionBtnHTML = '') {
   const rar = getRarityObj(skin.rarity);
   const price = getSkinPrice(skin, edition, wearCode);
@@ -344,24 +345,26 @@ function createSkinTileHTML(skin, edition = 'normal', wearCode = 'FN', extraClas
 
   const badges = [];
   if (edition === 'stattrak') badges.push('<span class="st-pill">ST™</span>');
-  if (edition === 'souvenir') badges.push('<span class="souv-pill">★ SOUVENIR</span>');
+  if (edition === 'souvenir') badges.push('<span class="souv-pill">★ SOUV</span>');
 
   return `
-    <div class="skin-wrap">
-      <div class="cs-skin-tile ${edClass} ${extraClass}"
+    <div class="card-wrap">
+      <div class="cs-skin-card ${edClass} ${extraClass}"
            style="--rar-color: ${rar.color};"
            ${clickAttr}>
-        <div class="skin-top-row">
-          <span class="wear-tag">${wearCode}</span>
-          <span class="skin-rarity-dot">${rar.name}</span>
+        <div class="skin-card-top">
+          <span class="wear-badge">${wearCode}</span>
+          <span class="rarity-label-top">${rar.name}</span>
         </div>
-        <img class="skin-thumb" loading="lazy" decoding="async" draggable="false" src="${skin.img}" alt="${formatSkinTitle(skin)}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'">
-        <div class="skin-info-block">
-          <div class="skin-weapon">${skin.weapon || 'Weapon'}</div>
-          <div class="skin-title">${skin.name}</div>
+        <div class="skin-img-frame">
+          <img loading="lazy" decoding="async" draggable="false" src="${skin.img}" alt="${formatSkinTitle(skin)}" onerror="this.src='https://placehold.co/320x200/181a20/ef4444?text=${encodeURIComponent(formatSkinTitle(skin))}'">
         </div>
-        <div class="skin-bottom-area">
-          <span class="skin-price">${price} ₽</span>
+        <div class="skin-text-block">
+          <div class="skin-weapon-line">${skin.weapon || 'Weapon'}</div>
+          <div class="skin-name-line">${skin.name}</div>
+        </div>
+        <div class="skin-footer-line">
+          <span class="skin-price-val">${price} ₽</span>
           <div>${badges.join('')}</div>
         </div>
       </div>
@@ -383,7 +386,7 @@ function createUpgradeSquareTileHTML(skin, edition = 'normal', wearCode = 'FN', 
          ${clickAttr}>
       <div class="upg-tile-top">
         <span class="upg-tile-price">${price} ₽</span>
-        <span class="wear-tag" style="font-size:9px;padding:1px 4px;">${edTag}${wearCode}</span>
+        <span class="wear-badge" style="font-size:9px;padding:1px 4px;">${edTag}${wearCode}</span>
       </div>
       <img class="upg-tile-img" loading="lazy" decoding="async" draggable="false" src="${skin.img}" alt="${formatSkinTitle(skin)}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS'">
       <div class="upg-tile-name">${formatSkinTitle(skin)}</div>
@@ -662,9 +665,9 @@ function rollWeightedSkin(poolSkins) {
 }
 
 function getRouletteStepWidth() {
-  const firstTile = document.querySelector('.roulette-track .skin-wrap');
+  const firstTile = document.querySelector('.roulette-track .card-wrap');
   const trackEl = firstTile ? firstTile.parentElement : null;
-  const tileW = firstTile ? firstTile.getBoundingClientRect().width : 185;
+  const tileW = firstTile ? firstTile.getBoundingClientRect().width : 195;
   let gapW = 12;
   if (trackEl) {
     const g = parseFloat(getComputedStyle(trackEl).columnGap || getComputedStyle(trackEl).gap);
@@ -688,7 +691,7 @@ function trackRouletteSkinsPassingPointer(durationSec, isActiveCheck = () => isS
   const track = document.getElementById(trackId);
   const pointer = track?.parentElement?.querySelector('.roulette-pointer');
   if (!track || !pointer) return;
-  const items = Array.from(track.querySelectorAll('.skin-wrap'));
+  const items = Array.from(track.querySelectorAll('.card-wrap'));
   if (!items.length) return;
 
   const startTime = performance.now();
@@ -1053,7 +1056,7 @@ function pickDuelCaseAndSpin(playerCaseId) {
       const track = document.getElementById(`duel-track-${idx}`);
       if (!track) return;
       track.style.transition = 'transform 4.2s cubic-bezier(0.12, 0.88, 0.22, 1)';
-      track.style.transform = `translateX(-${38 * 162 + 75}px)`;
+      track.style.transform = `translateX(-${38 * 182 + 85}px)`;
     });
     trackRouletteSkinsPassingPointer(4.2, () => isDuelRunning, 'duel-track-0');
   }, 30);
@@ -1286,7 +1289,7 @@ function executeCraft() {
   renderCraftUI();
 }
 
-// === ПРОСМОТР ТОЛЬКО КАРТИНКИ СКИНА ===
+// === ПРОСМОТР ТОЛЬКО КАРТИНКИ СКИНА В ИНВЕНТАРЕ ===
 function openSkinImageModal(skinId) {
   const skin = getSkinById(skinId);
   if (!skin) return;
@@ -1489,10 +1492,10 @@ function updateSkinPreview() {
     price: Number(document.getElementById('new-skin-price').value) || 1200,
     hasStatTrak: Boolean(document.getElementById('new-skin-has-st').checked),
     hasSouvenir: Boolean(document.getElementById('new-skin-has-souv').checked),
-    img: document.getElementById('new-skin-img').value.trim() || 'https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'
+    img: document.getElementById('new-skin-img').value.trim() || 'https://placehold.co/320x200/181a20/ef4444?text=AK-47+%7C+Redline'
   };
   const ed = document.getElementById('preview-edition')?.value || 'normal';
-  const wr = document.getElementById('preview-wear')?.value || 'FN';
+  const wr = document.getElementById('preview-wear')?.value || 'FT';
   box.innerHTML = createSkinTileHTML(sample, ed, wr);
 }
 
@@ -1508,7 +1511,7 @@ function adminAddSkin() {
     price: Number(document.getElementById('new-skin-price').value) || 1000,
     hasStatTrak: Boolean(document.getElementById('new-skin-has-st').checked),
     hasSouvenir: Boolean(document.getElementById('new-skin-has-souv').checked),
-    img: document.getElementById('new-skin-img').value.trim() || 'https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'
+    img: document.getElementById('new-skin-img').value.trim() || `https://placehold.co/320x200/181a20/ef4444?text=${encodeURIComponent(weapon + ' | ' + name)}`
   });
   saveState(true); renderAdminUI();
 }
