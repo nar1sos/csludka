@@ -288,3 +288,151 @@ select, input[type="text"], input[type="number"], input[type="password"] {
   .roulettes-multi-container.is-multi .roulette-wrapper { height: 146px; }
   .roulettes-multi-container.is-multi .roulette-track .card-wrap { width: 92px; min-width: 92px; }
 }
+
+/* КНОПКА ЗАЛИТЬ В ОБЛАКО И ПОИСК ПО ЦЕНЕ В ИНВЕНТАРЕ */
+.cloud-upload-btn {
+  border-color: rgba(245, 185, 21, 0.45);
+  color: var(--accent-gold);
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.cloud-upload-btn:hover {
+  border-color: var(--accent-gold);
+  background: rgba(245, 185, 21, 0.12);
+}
+
+.price-search-input {
+  background: var(--bg-card);
+  color: #fff;
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12px;
+  width: 112px;
+  max-width: 100%;
+}
+.price-search-input:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+}
+input[type="text"].price-search-input {
+  width: 165px;
+}
+
+/* ПЛАШКИ СКИНОВ В ИНВЕНТАРЕ (БЕЗ ВРАЩЕНИЯ ПО КЛИКУ) */
+.collection-compact-grid {
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 14px;
+}
+
+.inv-tile-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.inv-skin-tile {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1.04;
+  border-radius: 4px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 65% 52%, rgba(255, 255, 255, 0.08) 0%, rgba(10, 12, 18, 0.88) 72%),
+    var(--rar-gradient, linear-gradient(155deg, #2d1638 0%, #11131a 100%));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 9px 10px 12px;
+  user-select: none;
+  cursor: default;
+}
+
+.inv-tile-price {
+  position: relative;
+  z-index: 5;
+  align-self: flex-end;
+  font-size: 13px;
+  font-weight: 800;
+  color: #f5b915;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+  letter-spacing: 0.2px;
+  line-height: 1.1;
+}
+
+.inv-tile-radar {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 64% 52%, transparent 32px, rgba(255, 255, 255, 0.09) 33px, transparent 34px),
+                    radial-gradient(circle at 64% 52%, transparent 52px, rgba(255, 255, 255, 0.07) 53px, transparent 54px);
+  mask-image: repeating-conic-gradient(#000 0deg 8deg, transparent 8deg 16deg);
+  -webkit-mask-image: repeating-conic-gradient(#000 0deg 8deg, transparent 8deg 16deg);
+}
+
+.inv-tile-img {
+  position: relative;
+  z-index: 3;
+  width: 88%;
+  max-height: 54%;
+  object-fit: contain;
+  margin: auto 0;
+  align-self: center;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.75));
+  pointer-events: none;
+}
+
+.inv-tile-footer {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-bottom: 4px;
+}
+
+.inv-tile-weapon {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(241, 245, 249, 0.88);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  line-height: 1.2;
+}
+
+.inv-tile-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95);
+  line-height: 1.25;
+}
+
+.inv-tile-rarity-bar {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 0;
+  height: 5px;
+  border-radius: 3px 3px 0 0;
+  background: var(--rar-bar, #d946ef);
+  box-shadow: 0 -1px 10px var(--rar-bar-glow, rgba(217, 70, 239, 0.65));
+  z-index: 6;
+}
+
+.inv-tile-sell-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  border-radius: 6px;
+}
