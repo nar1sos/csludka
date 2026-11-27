@@ -169,17 +169,17 @@ function getSkinById(id) { return skinMapCache.get(id); }
 function getWearObj(code) { return wearMapCache.get(code) || state.wears[0] || { code: 'FN', label: 'Factory New', priceMult: 1, weight: 100 }; }
 
 function getRarityGradientColors(rar) {
-  if (!rar) return ['#4b69ff', '#14171f'];
+  if (!rar) return ['#4b69ff', '#131722'];
   if (Array.isArray(rar.gradientColors) && rar.gradientColors.length > 0) return rar.gradientColors.slice(0, 5);
-  return [rar.color || '#4b69ff', rar.bg || '#14171f'];
+  return [rar.color || '#4b69ff', rar.bg || '#131722'];
 }
 
 function buildRarityBgStyle(rar) {
   const cols = getRarityGradientColors(rar);
   if (cols.length >= 2) {
-    return `linear-gradient(155deg, ${cols[0]}33 0%, ${cols[cols.length - 1]} 75%)`;
+    return `linear-gradient(155deg, ${cols[0]}36 0%, ${cols[cols.length - 1]} 78%)`;
   }
-  return `linear-gradient(155deg, ${cols[0]}33 0%, #14171f 75%)`;
+  return `linear-gradient(155deg, ${cols[0]}36 0%, #131722 78%)`;
 }
 
 function sanitizeChanceInput(rawVal) {
@@ -920,11 +920,11 @@ function updateUpgradeSlotsAndChance() {
     const chance = calculateUpgradeChance(sPrice, tPrice);
     chanceText.textContent = formatUpgradeChanceText(chance);
     const deg = (chance / 100) * 360;
-    circle.style.background = `conic-gradient(var(--accent-gold) 0deg ${deg}deg, #262934 ${deg}deg 360deg)`;
+    circle.style.background = `conic-gradient(var(--accent-gold) 0deg ${deg}deg, #222736 ${deg}deg 360deg)`;
     btn.disabled = isUpgrading;
   } else {
     chanceText.textContent = '0.00%';
-    circle.style.background = `conic-gradient(var(--accent-gold) 0deg, #262934 0deg)`;
+    circle.style.background = `conic-gradient(var(--accent-gold) 0deg, #222736 0deg)`;
     btn.disabled = true;
   }
 }
@@ -970,7 +970,7 @@ function executeUpgrade() {
       msg.innerHTML = `<span style="color:#4ade80;font-weight:800;">УСПЕХ! Выпал ${formatSkinTitle(tgtSkin)}</span>`;
     } else {
       SoundFX.upgradeFail();
-      msg.innerHTML = `<span style="color:#f87171;font-weight:800;">НЕУДАЧА! Скин сгорел</span>`;
+      msg.innerHTML = `<span style="color:#ff5277;font-weight:800;">НЕУДАЧА! Скин сгорел</span>`;
     }
     saveState(false);
     renderUpgradeMyInventory();
@@ -1398,7 +1398,7 @@ function setAdminBalanceStatus(msg, err = false) {
   const el = document.getElementById('admin-balance-status');
   if (!el) return;
   el.textContent = msg;
-  el.style.color = err ? '#f87171' : '#4ade80';
+  el.style.color = err ? '#ff5277' : '#4ade80';
 }
 
 function adminGiveBalance(mode = 'add') {
@@ -1473,7 +1473,7 @@ function renderAdminUI() {
       <div class="admin-cat-actions">
         <button class="secondary-btn" style="padding:5px 9px;" ${idx === 0 ? 'disabled' : ''} onclick="moveCaseCategory('${cat.id}', -1)">▲</button>
         <button class="secondary-btn" style="padding:5px 9px;" ${idx === state.caseCategories.length - 1 ? 'disabled' : ''} onclick="moveCaseCategory('${cat.id}', 1)">▼</button>
-        <button class="secondary-btn" style="padding:5px 9px;color:#f87171;" ${state.caseCategories.length <= 1 ? 'disabled' : ''} onclick="adminDeleteCaseCategory('${cat.id}')">✕</button>
+        <button class="secondary-btn" style="padding:5px 9px;color:#ff5277;" ${state.caseCategories.length <= 1 ? 'disabled' : ''} onclick="adminDeleteCaseCategory('${cat.id}')">✕</button>
       </div>
     </div>
   `).join('');
@@ -1492,7 +1492,7 @@ function renderAdminUI() {
 
   document.getElementById('admin-rarities-list').innerHTML = state.rarities.map(r => `
     <div class="rar-manage-card" style="--rar-color:${r.color};">
-      <div class="rar-manage-top"><span style="color:${r.color}">${r.name}</span><button onclick="adminDeleteRarity('${r.id}')" style="background:none;border:none;color:#f87171;cursor:pointer;">✕</button></div>
+      <div class="rar-manage-top"><span style="color:${r.color}">${r.name}</span><button onclick="adminDeleteRarity('${r.id}')" style="background:none;border:none;color:#ff5277;cursor:pointer;">✕</button></div>
       <div class="rar-chance-row"><span>Шанс:</span><input type="text" value="${r.weight}" onchange="updateRarityWeight('${r.id}', this.value)"></div>
     </div>
   `).join('');
@@ -1507,7 +1507,7 @@ function renderAdminUI() {
   document.getElementById('admin-skins-count').textContent = state.skins.length;
   document.getElementById('admin-all-skins').innerHTML = state.skins.map(s => {
     const ed = s.hasSouvenir ? 'souvenir' : s.hasStatTrak ? 'stattrak' : 'normal';
-    const delBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;color:#f87171;" onclick="event.stopPropagation(); adminDeleteSkin('${s.id}')">Удалить</button>`;
+    const delBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;color:#ff5277;" onclick="event.stopPropagation(); adminDeleteSkin('${s.id}')">Удалить</button>`;
     return createSkinTileHTML(s, ed, 'FN', s.id === editingSkinId ? 'selected' : '', `onclick="openEditSkinPanel('${s.id}')"`, delBtn);
   }).join('');
 
@@ -1662,7 +1662,7 @@ function renderAdminCasesList() {
       <div class="admin-case-meta">${c.price} ₽ • ${c.cardIds.length} скинов</div>
       <div class="admin-case-btns">
         <button class="secondary-btn" style="padding:6px 10px;font-size:12px;" onclick="openEditCasePanel('${c.id}')">Изменить</button>
-        <button class="secondary-btn" style="padding:6px 10px;font-size:12px;color:#f87171;" onclick="adminDeleteCase('${c.id}')">Удалить</button>
+        <button class="secondary-btn" style="padding:6px 10px;font-size:12px;color:#ff5277;" onclick="adminDeleteCase('${c.id}')">Удалить</button>
       </div>
     </div>
   `).join('');
