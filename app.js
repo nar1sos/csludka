@@ -8,6 +8,7 @@ const MIN_START_BALANCE = 1;
 const MAX_START_BALANCE = 1500;
 const DUEL_WIN_BONUS = 400;
 const MAX_CASE_OPEN_COUNT = 10;
+const PROMO_BONUS_AMOUNT = 180;
 
 const DEFAULT_CASE_CATEGORIES = [
   { id: 'cat_featured', name: 'Основные кейсы' },
@@ -169,17 +170,17 @@ function getSkinById(id) { return skinMapCache.get(id); }
 function getWearObj(code) { return wearMapCache.get(code) || state.wears[0] || { code: 'FN', label: 'Factory New', priceMult: 1, weight: 100 }; }
 
 function getRarityGradientColors(rar) {
-  if (!rar) return ['#4b69ff', '#131722'];
+  if (!rar) return ['#3b82f6', '#101829'];
   if (Array.isArray(rar.gradientColors) && rar.gradientColors.length > 0) return rar.gradientColors.slice(0, 5);
-  return [rar.color || '#4b69ff', rar.bg || '#131722'];
+  return [rar.color || '#3b82f6', rar.bg || '#101829'];
 }
 
 function buildRarityBgStyle(rar) {
   const cols = getRarityGradientColors(rar);
   if (cols.length >= 2) {
-    return `linear-gradient(155deg, ${cols[0]}36 0%, ${cols[cols.length - 1]} 78%)`;
+    return `linear-gradient(180deg, ${cols[0]}2b 0%, #101829 85%)`;
   }
-  return `linear-gradient(155deg, ${cols[0]}36 0%, #131722 78%)`;
+  return `linear-gradient(180deg, ${cols[0]}2b 0%, #101829 85%)`;
 }
 
 function sanitizeChanceInput(rawVal) {
@@ -262,6 +263,12 @@ function saveNickname() {
   }
 }
 
+function claimPromoBonus() {
+  SoundFX.sell();
+  state.balance += PROMO_BONUS_AMOUNT;
+  saveState(false);
+}
+
 function switchTab(tabName) {
   SoundFX.click();
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -279,6 +286,45 @@ function switchTab(tabName) {
   if (tabName === 'collection') renderCollection();
   if (tabName === 'craft') renderCraftUI();
   if (tabName === 'admin') renderAdminUI();
+}
+
+// === ЛЕВАЯ ЛЕНТА ВЫПАДЕНИЙ ===
+let liveFeedTimer = null;
+
+function pushLiveDrop(skin, edition = 'normal', wearCode = 'FN') {
+  const feed = document.getElementById('live-drop-feed');
+  if (!feed || !skin) return;
+  const rar = getRarityObj(skin.rarity);
+  const price = getSkinPrice(skin, edition, wearCode);
+  const el = document.createElement('div');
+  el.className = 'live-drop-item';
+  el.style.setProperty('--rar-color', rar.color);
+  el.onclick = () => openSkinDetailsModal(skin.id, edition, wearCode);
+  el.innerHTML = `
+    <img src="${escapeHtmlAttr(skin.img)}" alt="${escapeHtmlAttr(skin.name)}" onerror="this.src='https://placehold.co/120x60/121b2e/ffffff?text=CS'">
+    <div class="live-drop-name">${skin.name}</div>
+    <div class="live-drop-price">${price} ₽</div>
+  `;
+  feed.prepend(el);
+  while (feed.children.length > 10) {
+    feed.removeChild(feed.lastElementChild);
+  }
+}
+
+function initLiveDropFeed() {
+  const feed = document.getElementById('live-drop-feed');
+  if (!feed || !state.skins.length) return;
+  feed.innerHTML = '';
+  for (let i = 0; i < 8; i++) {
+    const rnd = state.skins[Math.floor(Math.random() * state.skins.length)];
+    pushLiveDrop(rnd, rollEditionForSkin(rnd), rollWearCode());
+  }
+  if (liveFeedTimer) clearInterval(liveFeedTimer);
+  liveFeedTimer = setInterval(() => {
+    if (!state.skins.length) return;
+    const rnd = state.skins[Math.floor(Math.random() * state.skins.length)];
+    pushLiveDrop(rnd, rollEditionForSkin(rnd), rollWearCode());
+  }, 3600);
 }
 
 // === ИЗНОС, STATTRAK И СУВЕНИР ===
@@ -380,20 +426,19 @@ function createSkinTileHTML(skin, edition = 'normal', wearCode = 'FN', extraClas
                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
           <span class="skin-img-fallback" style="display:none;">${safeTitle}</span>
         </div>
-        <div class="skin-text-block">
-          <div class="skin-weapon-line">${skin.weapon || 'Weapon'}</div>
-          <div class="skin-name-line">${skin.name}</div>
-        </div>
-        <div class="skin-footer-line">
-          <span class="skin-price-val">${price} ₽</span>
+        <div class="skin-price-line">
+          <span>${price} ₽</span>
           <div>${badges.join('')}</div>
         </div>
+        <div class="skin-weapon-line">${skin.weapon || 'Weapon'}</div>
+        <div class="skin-name-line">${skin.name}</div>
       </div>
       ${actionBtnHTML}
     </div>
   `;
 }
 
+// КВАДРАТНАЯ ЯЧЕЙКА В АПГРЕЙДЕ С КВАДРАТИКОМ `+` ПРИ НАВЕДЕНИИ
 function createUpgradeSquareTileHTML(skin, edition = 'normal', wearCode = 'FN', isSelected = false, clickAttr = '', extraAttr = '') {
   const rar = getRarityObj(skin.rarity);
   const price = getSkinPrice(skin, edition, wearCode);
@@ -406,6 +451,7 @@ function createUpgradeSquareTileHTML(skin, edition = 'normal', wearCode = 'FN', 
          style="--rar-color: ${rar.color};"
          ${extraAttr}
          ${clickAttr}>
+      <span class="upg-hover-plus" aria-hidden="true">+</span>
       <div class="upg-tile-top">
         <span class="upg-tile-price">${price} ₽</span>
         <span class="wear-badge" style="font-size:9px;padding:1px 4px;">${edTag}${wearCode}</span>
@@ -419,12 +465,13 @@ function createUpgradeSquareTileHTML(skin, edition = 'normal', wearCode = 'FN', 
 function appendEmptyUpgradeSlots(container, itemCount, minRows = 3) {
   if (!container) return;
   const width = container.getBoundingClientRect().width;
-  const cols = width ? Math.max(2, Math.floor((width + 8) / 120)) : 4;
+  const cols = width ? Math.max(2, Math.floor((width + 8) / 112)) : 4;
   const totalSlots = Math.max(minRows, Math.ceil(itemCount / cols)) * cols;
   const emptyCount = Math.max(0, totalSlots - itemCount);
   for (let i = 0; i < emptyCount; i++) {
     const d = document.createElement('div');
     d.className = 'upg-empty-tile';
+    d.innerHTML = `<span class="upg-empty-plus">+</span>`;
     container.appendChild(d);
   }
 }
@@ -438,6 +485,7 @@ function giveSkinToPlayer(skin, edition = 'normal', wearCode = 'FN') {
   };
   state.inventory.push(item);
   saveState(false);
+  pushLiveDrop(skin, edition, wearCode);
   return item;
 }
 
@@ -547,6 +595,7 @@ async function syncCatalogFromCloud(forceOverwriteLocal = false) {
 
     saveState(false);
     renderCasesList();
+    initLiveDropFeed();
     if (!document.getElementById('admin-panel-content')?.classList.contains('hidden')) {
       renderAdminUI();
     }
@@ -691,8 +740,8 @@ function rollWeightedSkin(poolSkins) {
 function getRouletteStepWidth() {
   const firstTile = document.querySelector('.roulette-track .card-wrap');
   const trackEl = firstTile ? firstTile.parentElement : null;
-  const tileW = firstTile ? firstTile.getBoundingClientRect().width : 210;
-  let gapW = 12;
+  const tileW = firstTile ? firstTile.getBoundingClientRect().width : 175;
+  let gapW = 10;
   if (trackEl) {
     const g = parseFloat(getComputedStyle(trackEl).columnGap || getComputedStyle(trackEl).gap);
     if (Number.isFinite(g) && g >= 0) gapW = g;
@@ -773,7 +822,7 @@ function spinCurrentCase(fast = false) {
     for (let row = 0; row < count; row++) {
       const track = document.getElementById(`roulette-track-${row}`);
       if (!track) continue;
-      const jitter = Math.random() * Math.min(24, tileW * 0.16) - Math.min(12, tileW * 0.08);
+      const jitter = Math.random() * Math.min(20, tileW * 0.16) - Math.min(10, tileW * 0.08);
       const offset = 38 * stepW + jitter + tileW / 2;
       track.style.transition = `transform ${durationSec}s cubic-bezier(0.12, 0.88, 0.22, 1)`;
       track.style.transform = `translateX(-${offset}px)`;
@@ -794,7 +843,7 @@ function spinCurrentCase(fast = false) {
   }, fast ? 950 : 4350);
 }
 
-// === АПГРЕЙД ===
+// === АПГРЕЙД + ПОИСК ПО ЦЕНЕ ===
 function calculateUpgradeChance(srcPrice, tgtPrice) {
   if (srcPrice <= 0 || tgtPrice <= 0) return 0;
   return Math.min(85, Math.max(0, (srcPrice / tgtPrice) * 85));
@@ -805,6 +854,17 @@ function formatUpgradeChanceText(chance) {
   if (chance < 0.01) return chance.toFixed(4).replace(/0+$/, '').replace(/\.$/, '') + '%';
   if (chance < 1) return chance.toFixed(2) + '%';
   return chance.toFixed(2).replace(/\.00$/, '') + '%';
+}
+
+function resetUpgradeFilters() {
+  SoundFX.click();
+  const s = document.getElementById('upg-target-search');
+  const pMin = document.getElementById('upg-price-min');
+  const pMax = document.getElementById('upg-price-max');
+  if (s) s.value = '';
+  if (pMin) pMin.value = '';
+  if (pMax) pMax.value = '';
+  renderUpgradeTargets();
 }
 
 function renderUpgradeUI() {
@@ -838,6 +898,13 @@ function renderUpgradeMyInventory() {
 function renderUpgradeTargets() {
   const sortMode = document.getElementById('upg-target-sort')?.value || 'price-asc';
   const searchQ = (document.getElementById('upg-target-search')?.value || '').trim().toLowerCase();
+  const rawMin = document.getElementById('upg-price-min')?.value;
+  const rawMax = document.getElementById('upg-price-max')?.value;
+  const hasMin = rawMin !== '' && rawMin !== undefined && Number.isFinite(Number(rawMin));
+  const hasMax = rawMax !== '' && rawMax !== undefined && Number.isFinite(Number(rawMax));
+  const priceMin = hasMin ? Number(rawMin) : null;
+  const priceMax = hasMax ? Number(rawMax) : null;
+
   const edFilter = document.getElementById('upg-target-edition-filter')?.value || 'all';
   const wearCode = document.getElementById('upg-target-wear-filter')?.value || 'FN';
   upgSelectedTargetWear = wearCode;
@@ -852,6 +919,9 @@ function renderUpgradeTargets() {
     editions.forEach(ed => {
       if (ed === 'stattrak' && !skin.hasStatTrak) return;
       if (ed === 'souvenir' && !skin.hasSouvenir) return;
+      const price = getSkinPrice(skin, ed, wearCode);
+      if (priceMin !== null && price < priceMin) return;
+      if (priceMax !== null && price > priceMax) return;
       targets.push({ skin, edition: ed, wear: wearCode });
     });
   });
@@ -911,8 +981,13 @@ function updateUpgradeSlotsAndChance() {
   const srcSkin = srcItem ? getSkinById(srcItem.cardId) : null;
   const tgtSkin = upgSelectedTargetId ? getSkinById(upgSelectedTargetId) : null;
 
-  srcSlot.innerHTML = srcSkin ? createSkinTileHTML(srcSkin, srcItem.edition || 'normal', srcItem.wear || 'FN') : 'Выбери скин снизу';
-  tgtSlot.innerHTML = tgtSkin ? createSkinTileHTML(tgtSkin, upgSelectedTargetEdition, upgSelectedTargetWear) : 'Выбери цель справа';
+  srcSlot.innerHTML = srcSkin
+    ? createSkinTileHTML(srcSkin, srcItem.edition || 'normal', srcItem.wear || 'FN')
+    : `<div class="plus-sq-badge">+</div><span>Выбери предмет снизу</span>`;
+
+  tgtSlot.innerHTML = tgtSkin
+    ? createSkinTileHTML(tgtSkin, upgSelectedTargetEdition, upgSelectedTargetWear)
+    : `<div class="plus-sq-badge">+</div><span>Выбери цель справа</span>`;
 
   if (srcSkin && tgtSkin) {
     const sPrice = getSkinPrice(srcSkin, srcItem.edition || 'normal', srcItem.wear || 'FN');
@@ -920,11 +995,11 @@ function updateUpgradeSlotsAndChance() {
     const chance = calculateUpgradeChance(sPrice, tPrice);
     chanceText.textContent = formatUpgradeChanceText(chance);
     const deg = (chance / 100) * 360;
-    circle.style.background = `conic-gradient(var(--accent-gold) 0deg ${deg}deg, #222736 ${deg}deg 360deg)`;
+    circle.style.background = `conic-gradient(#38bdf8 0deg ${deg}deg, #1b2842 ${deg}deg 360deg)`;
     btn.disabled = isUpgrading;
   } else {
     chanceText.textContent = '0.00%';
-    circle.style.background = `conic-gradient(var(--accent-gold) 0deg, #222736 0deg)`;
+    circle.style.background = `conic-gradient(#38bdf8 0deg, #1b2842 0deg)`;
     btn.disabled = true;
   }
 }
@@ -970,7 +1045,7 @@ function executeUpgrade() {
       msg.innerHTML = `<span style="color:#4ade80;font-weight:800;">УСПЕХ! Выпал ${formatSkinTitle(tgtSkin)}</span>`;
     } else {
       SoundFX.upgradeFail();
-      msg.innerHTML = `<span style="color:#ff5277;font-weight:800;">НЕУДАЧА! Скин сгорел</span>`;
+      msg.innerHTML = `<span style="color:#ff5d7d;font-weight:800;">НЕУДАЧА! Предмет сгорел</span>`;
     }
     saveState(false);
     renderUpgradeMyInventory();
@@ -1080,7 +1155,7 @@ function pickDuelCaseAndSpin(playerCaseId) {
       const track = document.getElementById(`duel-track-${idx}`);
       if (!track) return;
       track.style.transition = 'transform 4.2s cubic-bezier(0.12, 0.88, 0.22, 1)';
-      track.style.transform = `translateX(-${38 * 197 + 92.5}px)`;
+      track.style.transform = `translateX(-${38 * 180 + 85}px)`;
     });
     trackRouletteSkinsPassingPointer(4.2, () => isDuelRunning, 'duel-track-0');
   }, 30);
@@ -1313,7 +1388,7 @@ function executeCraft() {
   renderCraftUI();
 }
 
-// === ХАРАКТЕРИСТИКИ СКИНА (ТОЛЬКО СТАТИЧНАЯ КАРТИНКА + ХАРАКТЕРИСТИКИ) ===
+// === ХАРАКТЕРИСТИКИ СКИНА ===
 function openSkinDetailsModal(skinId, edition = 'normal', wearCode = 'FN', invUid = null) {
   const skin = getSkinById(skinId);
   if (!skin) return;
@@ -1362,7 +1437,7 @@ function closeSkinPreviewModal(e) {
 }
 
 // === АДМИНКА ===
-const DEFAULT_RARITY_PALETTE = ['#e84393', '#d32ce6', '#8847ff', '#4b69ff', '#facc15'];
+const DEFAULT_RARITY_PALETTE = ['#e84393', '#d32ce6', '#8847ff', '#3b82f6', '#eab308'];
 
 function renderNewRarityColorInputs(preset = null) {
   const box = document.getElementById('new-rar-colors-box');
@@ -1398,7 +1473,7 @@ function setAdminBalanceStatus(msg, err = false) {
   const el = document.getElementById('admin-balance-status');
   if (!el) return;
   el.textContent = msg;
-  el.style.color = err ? '#ff5277' : '#4ade80';
+  el.style.color = err ? '#ff5d7d' : '#4ade80';
 }
 
 function adminGiveBalance(mode = 'add') {
@@ -1471,9 +1546,9 @@ function renderAdminUI() {
     <div class="admin-cat-row">
       <b>#${idx + 1} ${cat.name}</b>
       <div class="admin-cat-actions">
-        <button class="secondary-btn" style="padding:5px 9px;" ${idx === 0 ? 'disabled' : ''} onclick="moveCaseCategory('${cat.id}', -1)">▲</button>
-        <button class="secondary-btn" style="padding:5px 9px;" ${idx === state.caseCategories.length - 1 ? 'disabled' : ''} onclick="moveCaseCategory('${cat.id}', 1)">▼</button>
-        <button class="secondary-btn" style="padding:5px 9px;color:#ff5277;" ${state.caseCategories.length <= 1 ? 'disabled' : ''} onclick="adminDeleteCaseCategory('${cat.id}')">✕</button>
+        <button class="secondary-btn" style="padding:4px 8px;" ${idx === 0 ? 'disabled' : ''} onclick="moveCaseCategory('${cat.id}', -1)">▲</button>
+        <button class="secondary-btn" style="padding:4px 8px;" ${idx === state.caseCategories.length - 1 ? 'disabled' : ''} onclick="moveCaseCategory('${cat.id}', 1)">▼</button>
+        <button class="secondary-btn" style="padding:4px 8px;color:#ff5d7d;" ${state.caseCategories.length <= 1 ? 'disabled' : ''} onclick="adminDeleteCaseCategory('${cat.id}')">✕</button>
       </div>
     </div>
   `).join('');
@@ -1492,13 +1567,13 @@ function renderAdminUI() {
 
   document.getElementById('admin-rarities-list').innerHTML = state.rarities.map(r => `
     <div class="rar-manage-card" style="--rar-color:${r.color};">
-      <div class="rar-manage-top"><span style="color:${r.color}">${r.name}</span><button onclick="adminDeleteRarity('${r.id}')" style="background:none;border:none;color:#ff5277;cursor:pointer;">✕</button></div>
+      <div class="rar-manage-top"><span style="color:${r.color}">${r.name}</span><button onclick="adminDeleteRarity('${r.id}')" style="background:none;border:none;color:#ff5d7d;cursor:pointer;">✕</button></div>
       <div class="rar-chance-row"><span>Шанс:</span><input type="text" value="${r.weight}" onchange="updateRarityWeight('${r.id}', this.value)"></div>
     </div>
   `).join('');
 
   document.getElementById('admin-case-skins-selector').innerHTML = state.skins.map(s => `
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="checkbox" class="case-skin-cb" value="${s.id}"> ${formatSkinTitle(s)}</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:11px;"><input type="checkbox" class="case-skin-cb" value="${s.id}"> ${formatSkinTitle(s)}</label>
   `).join('');
 
   renderAdminCasesList();
@@ -1507,7 +1582,7 @@ function renderAdminUI() {
   document.getElementById('admin-skins-count').textContent = state.skins.length;
   document.getElementById('admin-all-skins').innerHTML = state.skins.map(s => {
     const ed = s.hasSouvenir ? 'souvenir' : s.hasStatTrak ? 'stattrak' : 'normal';
-    const delBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;color:#ff5277;" onclick="event.stopPropagation(); adminDeleteSkin('${s.id}')">Удалить</button>`;
+    const delBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:5px 8px;font-size:11px;color:#ff5d7d;" onclick="event.stopPropagation(); adminDeleteSkin('${s.id}')">Удалить</button>`;
     return createSkinTileHTML(s, ed, 'FN', s.id === editingSkinId ? 'selected' : '', `onclick="openEditSkinPanel('${s.id}')"`, delBtn);
   }).join('');
 
@@ -1661,8 +1736,8 @@ function renderAdminCasesList() {
       <b>${c.name}</b>
       <div class="admin-case-meta">${c.price} ₽ • ${c.cardIds.length} скинов</div>
       <div class="admin-case-btns">
-        <button class="secondary-btn" style="padding:6px 10px;font-size:12px;" onclick="openEditCasePanel('${c.id}')">Изменить</button>
-        <button class="secondary-btn" style="padding:6px 10px;font-size:12px;color:#ff5277;" onclick="adminDeleteCase('${c.id}')">Удалить</button>
+        <button class="secondary-btn" style="padding:5px 9px;font-size:11px;" onclick="openEditCasePanel('${c.id}')">Изменить</button>
+        <button class="secondary-btn" style="padding:5px 9px;font-size:11px;color:#ff5d7d;" onclick="adminDeleteCase('${c.id}')">Удалить</button>
       </div>
     </div>
   `).join('');
@@ -1681,7 +1756,7 @@ function openEditCasePanel(caseId) {
   document.getElementById('edit-case-category').value = c.categoryId;
   const set = new Set(c.cardIds);
   document.getElementById('admin-edit-case-skins-selector').innerHTML = state.skins.map(sk => `
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="checkbox" class="edit-case-skin-cb" value="${sk.id}" ${set.has(sk.id) ? 'checked' : ''}> ${formatSkinTitle(sk)}</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:11px;"><input type="checkbox" class="edit-case-skin-cb" value="${sk.id}" ${set.has(sk.id) ? 'checked' : ''}> ${formatSkinTitle(sk)}</label>
   `).join('');
   updateEditCasePreview();
 }
@@ -1771,5 +1846,6 @@ updateCloudSyncBadge();
 updateSoundUI();
 renderNewRarityColorInputs();
 renderCasesList();
+initLiveDropFeed();
 if (isBrandNewPlayer) openStartBalanceModal();
 if (!hasLocalCatalogEdits) syncCatalogFromCloud(false);
