@@ -41,7 +41,7 @@
       <section id="tab-cases" class="tab-content active">
         <div id="cases-grid-view">
           <div class="section-header">
-            <h2>Кейсы со скинами</h2>
+            <h2>Кейсы CS</h2>
             <div class="sort-controls">
               <select id="cases-sort" onchange="renderCasesList()">
                 <option value="price-asc">Сначала дешевле</option>
@@ -88,7 +88,7 @@
               <option value="rarity-asc">По редкости (низшие)</option>
             </select>
           </div>
-          <div id="case-contents-grid" class="cards-grid"></div>
+          <div id="case-contents-grid" class="skins-grid"></div>
         </div>
       </section>
 
@@ -238,7 +238,7 @@
             <button id="confirm-trade-btn" class="primary-btn big-btn" onclick="confirmTrade()" disabled>Подтвердить обмен</button>
           </div>
           <h3>Твой инвентарь (<span id="trade-inv-count">0</span>)</h3>
-          <div id="trade-my-inv" class="cards-grid"></div>
+          <div id="trade-my-inv" class="skins-grid"></div>
         </div>
       </section>
 
@@ -267,7 +267,7 @@
           <div class="stat-pill">Успешных апгрейдов: <b id="stat-upgrades">0</b></div>
         </div>
 
-        <div id="collection-grid" class="cards-grid"></div>
+        <div id="collection-grid" class="skins-grid"></div>
       </section>
 
       <!-- КОНТРАКТЫ -->
@@ -294,7 +294,7 @@
             <option value="price-desc">Сначала дорогие</option>
           </select>
         </div>
-        <div id="craft-inv-grid" class="cards-grid"></div>
+        <div id="craft-inv-grid" class="skins-grid"></div>
       </section>
 
       <!-- АДМИНКА -->
@@ -312,6 +312,7 @@
           </div>
 
           <div class="admin-grid">
+            <!-- Баланс и звук -->
             <div class="admin-card">
               <h3>Баланс и звук</h3>
               <div class="admin-row">
@@ -331,6 +332,7 @@
               </div>
             </div>
 
+            <!-- Облако JSONBin -->
             <div class="admin-card">
               <h3>Облачная синхронизация (JSONBin.io)</h3>
               <div class="admin-row">
@@ -344,6 +346,7 @@
               </div>
             </div>
 
+            <!-- Настройки StatTrak и Сувениров -->
             <div class="admin-card">
               <h3>Множители и шансы StatTrak™ / Сувенир</h3>
               <div class="admin-row">
@@ -357,6 +360,7 @@
               <button class="primary-btn" style="margin-top:10px;" onclick="saveSpecialRates()">Сохранить коэффициенты</button>
             </div>
 
+            <!-- Категории кейсов -->
             <div class="admin-card">
               <h3>Категории кейсов</h3>
               <div class="admin-row">
@@ -367,6 +371,7 @@
             </div>
           </div>
 
+          <!-- Редкости -->
           <div class="admin-card" style="margin-top:16px;">
             <h3>Редкости и шансы выпадения</h3>
             <div class="admin-row">
@@ -379,17 +384,18 @@
             <div id="admin-rarities-list" class="rarities-admin-grid" style="margin-top:12px;"></div>
           </div>
 
+          <!-- Создание скина -->
           <div class="admin-card" style="margin-top:16px;">
             <h3>Добавить новый скин</h3>
             <div class="creator-split">
               <div class="creator-form">
                 <div class="admin-row">
                   <input type="text" id="new-skin-weapon" class="nick-input" placeholder="Оружие (напр. AK-47)" oninput="updateSkinPreview()">
-                  <input type="text" id="new-skin-name" class="nick-input" placeholder="Название скина (напр. Redline)" oninput="updateSkinPreview()">
+                  <input type="text" id="new-skin-name" class="nick-input" placeholder="Название скина (напр. Asiimov)" oninput="updateSkinPreview()">
                 </div>
                 <div class="admin-row" style="margin-top:8px;">
                   <select id="new-skin-rarity" onchange="updateSkinPreview()"></select>
-                  <input type="number" id="new-skin-price" class="nick-input" placeholder="Базовая цена FN (₽)" value="2520" oninput="updateSkinPreview()">
+                  <input type="number" id="new-skin-price" class="nick-input" placeholder="Базовая цена FN (₽)" value="1200" oninput="updateSkinPreview()">
                 </div>
                 <div class="admin-row" style="margin-top:8px;">
                   <input type="text" id="new-skin-img" class="nick-input" placeholder="URL картинки скина" oninput="updateSkinPreview()">
@@ -407,7 +413,7 @@
                   <select id="preview-wear" onchange="updateSkinPreview()">
                     <option value="FN">FN</option>
                     <option value="MW">MW</option>
-                    <option value="FT" selected>FT</option>
+                    <option value="FT">FT</option>
                     <option value="WW">WW</option>
                     <option value="BS">BS</option>
                   </select>
@@ -418,6 +424,7 @@
             </div>
           </div>
 
+          <!-- Редактирование скина -->
           <div id="admin-edit-skin-panel" class="admin-card hidden" style="margin-top:16px;border-color:var(--accent-gold);">
             <h3>Редактирование скина: <span id="edit-skin-heading"></span></h3>
             <div class="creator-split">
@@ -447,6 +454,7 @@
             </div>
           </div>
 
+          <!-- Создание кейса -->
           <div class="admin-card" style="margin-top:16px;">
             <h3>Создать новый кейс</h3>
             <div class="creator-split">
@@ -466,6 +474,7 @@
             </div>
           </div>
 
+          <!-- Редактирование кейса -->
           <div id="admin-edit-case-panel" class="admin-card hidden" style="margin-top:16px;border-color:var(--accent-gold);">
             <h3>Редактирование кейса: <span id="edit-case-heading"></span></h3>
             <div class="creator-split">
@@ -489,14 +498,16 @@
             </div>
           </div>
 
+          <!-- Список кейсов в админке -->
           <div class="admin-card" style="margin-top:16px;">
             <h3>Все кейсы (<span id="admin-cases-count">0</span>)</h3>
             <div id="admin-cases-list" class="admin-cases-grid" style="margin-top:12px;"></div>
           </div>
 
+          <!-- Все скины в админке -->
           <div class="admin-card" style="margin-top:16px;">
             <h3>Все скины (<span id="admin-skins-count">0</span>) — нажми для редактирования</h3>
-            <div id="admin-all-skins" class="cards-grid" style="margin-top:12px;"></div>
+            <div id="admin-all-skins" class="skins-grid" style="margin-top:12px;"></div>
           </div>
         </div>
       </section>
@@ -515,7 +526,7 @@
     </div>
   </div>
 
-  <!-- МОДАЛКА ПРОСМОТРА КАРТИНКИ СКИНА В ИНВЕНТАРЕ (ТОЛЬКО КАРТИНКА, БЕЗ КРУЧЕНИЯ) -->
+  <!-- МОДАЛКА ПРОСМОТРА КАРТИНКИ СКИНА (ТОЛЬКО КАРТИНКА, БЕЗ 3D) -->
   <div id="skin-preview-modal" class="modal hidden" onclick="closeSkinPreviewModal(event)">
     <div class="skin-image-only-box" onclick="event.stopPropagation()">
       <button class="modal-close-x" onclick="closeSkinPreviewModal()">✕</button>
