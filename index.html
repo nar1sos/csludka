@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CASE BATTLE — Case & Skin Simulator</title>
+  <title>CS LUDKA — Case & Skin Simulator</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,57 +11,38 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="topbar-left">
-      <div class="logo" onclick="switchTab('cases')">
-        <span class="logo-badge">CB</span>
-        <span>CASE<span class="logo-accent">BATTLE</span></span>
-      </div>
-
-      <nav class="nav-links">
-        <button class="nav-btn active" data-tab="cases" onclick="switchTab('cases')">Кейсы</button>
-        <button class="nav-btn" data-tab="upgrade" onclick="switchTab('upgrade')">Апгрейд</button>
-        <button class="nav-btn" data-tab="duels" onclick="switchTab('duels')">Дуэли</button>
-        <button class="nav-btn" data-tab="trade" onclick="switchTab('trade')">Трейды</button>
-        <button class="nav-btn" data-tab="collection" onclick="switchTab('collection')">Инвентарь</button>
-        <button class="nav-btn" data-tab="craft" onclick="switchTab('craft')">Контракты</button>
-        <button class="nav-btn" data-tab="admin" onclick="switchTab('admin')">Админка</button>
-      </nav>
+    <div class="logo" onclick="switchTab('cases')">
+      CS<span class="logo-accent">LUDKA</span>
     </div>
+
+    <nav class="nav-links">
+      <button class="nav-btn active" data-tab="cases" onclick="switchTab('cases')">Кейсы</button>
+      <button class="nav-btn" data-tab="packs" onclick="switchTab('packs')">Паки</button>
+      <button class="nav-btn" data-tab="upgrade" onclick="switchTab('upgrade')">Апгрейд</button>
+      <button class="nav-btn" data-tab="duels" onclick="switchTab('duels')">Дуэли</button>
+      <button class="nav-btn" data-tab="trade" onclick="switchTab('trade')">Трейды</button>
+      <button class="nav-btn" data-tab="collection" onclick="switchTab('collection')">Инвентарь</button>
+      <button class="nav-btn" data-tab="craft" onclick="switchTab('craft')">Крафты</button>
+      <button class="nav-btn" data-tab="admin" onclick="switchTab('admin')">Админка</button>
+    </nav>
 
     <div class="user-panel">
       <input type="text" id="nickname-input" class="nick-input" placeholder="Никнейм" maxlength="18" onchange="saveNickname()">
       <div class="balance-box">
-        <span id="user-balance">1500</span>
         <span class="balance-icon">₽</span>
+        <span id="user-balance">1500</span>
       </div>
-      <button id="sound-toggle-btn" class="secondary-btn icon-btn" onclick="toggleSoundMute()" title="Звук">🔊</button>
+      <button id="sound-toggle-btn" class="secondary-btn" style="padding:7px 10px;" onclick="toggleSoundMute()" title="Звук">🔊</button>
     </div>
   </header>
 
   <div class="workspace-layout">
-    <aside class="live-feed-sidebar" aria-label="Лента выпадений">
-      <div class="live-feed-head">
-        <span class="live-dot"></span>
-        <span>У НАС ВЫИГРЫВАЮТ</span>
-      </div>
-      <div id="live-drop-feed" class="live-drop-list"></div>
-    </aside>
-
     <main class="container">
-      <div class="promo-strip">
-        <div class="promo-bonus-tag">+12% <span>НА СЧЁТ</span></div>
-        <div class="promo-code-box">
-          <small>ИСПОЛЬЗУЙ ПРОМОКОД:</small>
-          <b>LUDKA-12</b>
-        </div>
-        <button class="promo-claim-btn" onclick="claimPromoBonus()">ЗАБРАТЬ +180 ₽</button>
-      </div>
-
       <!-- КЕЙСЫ -->
       <section id="tab-cases" class="tab-content active">
         <div id="cases-grid-view">
           <div class="section-header">
-            <h2>КЕЙСЫ СО СКИНАМИ</h2>
+            <h2>Кейсы со скинами</h2>
             <div class="sort-controls">
               <select id="cases-sort" onchange="renderCasesList()">
                 <option value="price-asc">Сначала дешевле</option>
@@ -73,40 +54,34 @@
         </div>
 
         <div id="case-open-view" class="hidden">
-          <div class="case-top-bar">
-            <button class="back-btn" onclick="closeCaseView()">← Назад к кейсам</button>
-            <h2 id="active-case-title" class="case-hero-title">КЕЙС</h2>
-            <div style="width:110px;"></div>
+          <button class="back-btn" onclick="closeCaseView()">← Назад к кейсам</button>
+          <div class="case-open-top">
+            <h2 id="active-case-title">Кейс</h2>
+            <div id="case-count-selector" class="multi-open-selector">
+              <button class="count-chip active" data-count="1" onclick="setCaseOpenCount(1)">x1</button>
+              <button class="count-chip" data-count="2" onclick="setCaseOpenCount(2)">x2</button>
+              <button class="count-chip" data-count="3" onclick="setCaseOpenCount(3)">x3</button>
+              <button class="count-chip" data-count="4" onclick="setCaseOpenCount(4)">x4</button>
+              <button class="count-chip" data-count="5" onclick="setCaseOpenCount(5)">x5</button>
+              <button class="count-chip" data-count="6" onclick="setCaseOpenCount(6)">x6</button>
+              <button class="count-chip" data-count="7" onclick="setCaseOpenCount(7)">x7</button>
+              <button class="count-chip" data-count="8" onclick="setCaseOpenCount(8)">x8</button>
+              <button class="count-chip" data-count="9" onclick="setCaseOpenCount(9)">x9</button>
+              <button class="count-chip" data-count="10" onclick="setCaseOpenCount(10)">x10</button>
+            </div>
           </div>
 
           <div id="roulettes-multi-container" class="roulettes-multi-container"></div>
 
-          <div class="case-count-bar">
-            <span>Открыть</span>
-            <div id="case-count-selector" class="multi-open-selector">
-              <button class="count-chip active" data-count="1" onclick="setCaseOpenCount(1)">1</button>
-              <button class="count-chip" data-count="2" onclick="setCaseOpenCount(2)">2</button>
-              <button class="count-chip" data-count="3" onclick="setCaseOpenCount(3)">3</button>
-              <button class="count-chip" data-count="4" onclick="setCaseOpenCount(4)">4</button>
-              <button class="count-chip" data-count="5" onclick="setCaseOpenCount(5)">5</button>
-              <button class="count-chip" data-count="6" onclick="setCaseOpenCount(6)">6</button>
-              <button class="count-chip" data-count="7" onclick="setCaseOpenCount(7)">7</button>
-              <button class="count-chip" data-count="8" onclick="setCaseOpenCount(8)">8</button>
-              <button class="count-chip" data-count="9" onclick="setCaseOpenCount(9)">9</button>
-              <button class="count-chip" data-count="10" onclick="setCaseOpenCount(10)">10</button>
-            </div>
-            <span>раз</span>
-          </div>
-
           <div class="roulette-controls">
             <button id="spin-case-btn" class="primary-btn big-btn" onclick="spinCurrentCase(false)">
-              ОТКРЫТЬ <span id="active-case-count-label">x1</span> ЗА <span id="active-case-total-price">0</span> ₽
+              Открыть <span id="active-case-count-label">x1</span> за <span id="active-case-total-price">0</span> ₽
             </button>
-            <button id="fast-spin-btn" class="secondary-btn big-btn" onclick="spinCurrentCase(true)">⚡ БЫСТРО</button>
+            <button id="fast-spin-btn" class="secondary-btn" onclick="spinCurrentCase(true)">Быстро</button>
           </div>
 
-          <div class="section-header" style="margin-top:34px;">
-            <h3>СОДЕРЖИМОЕ КЕЙСА</h3>
+          <div class="section-header" style="margin-top:28px;">
+            <h3>Содержимое кейса</h3>
             <select id="case-contents-sort" onchange="renderCaseContents()">
               <option value="price-desc">Сначала дорогие</option>
               <option value="price-asc">Сначала дешёвые</option>
@@ -118,22 +93,37 @@
         </div>
       </section>
 
+      <!-- ПАКИ -->
+      <section id="tab-packs" class="tab-content">
+        <div class="section-header">
+          <h2>Паки скинов</h2>
+        </div>
+        <div class="pack-hero">
+          <div class="pack-card-art">
+            <div style="font-size:12px;font-weight:900;color:#fbbf24;letter-spacing:1px;">WEAPON PACK</div>
+            <div style="font-size:28px;font-weight:900;color:#fff;">5 СКИНОВ</div>
+            <div style="font-size:12px;color:#cbd5e1;">Износ • StatTrak™ • Сувенир</div>
+          </div>
+          <div class="pack-info">
+            <h3>Пак CS-скинов (5 предметов)</h3>
+            <p class="hint-text" style="margin:8px 0 16px;">Открывает 5 скинов со случайным износом, шансом на StatTrak™ и Сувенирную версию.</p>
+            <button id="buy-pack-btn" class="primary-btn big-btn" onclick="buyPack()">Купить пак за 1000 ₽</button>
+          </div>
+        </div>
+        <div id="pack-reveal-area" class="cards-grid" style="margin-top:22px;"></div>
+      </section>
+
       <!-- АПГРЕЙД -->
       <section id="tab-upgrade" class="tab-content">
-        <div class="upgrade-header-row">
-          <div>
-            <h2>МОДЕРНИЗАЦИЯ ОРУЖИЯ</h2>
-            <div id="upgrade-result-msg" class="hint-text">Выбери предмет слева и цель справа для апгрейда</div>
-          </div>
+        <div class="section-header">
+          <h2>Апгрейд скинов</h2>
+          <div id="upgrade-result-msg"></div>
         </div>
 
         <div class="upgrade-arena">
           <div class="upgrade-slot-box">
-            <div class="slot-label">Твой предмет</div>
-            <div id="upgrade-source-slot" class="slot-stage">
-              <div class="plus-sq-badge">+</div>
-              <span>Выбери предмет снизу</span>
-            </div>
+            <div class="slot-label">Твой скин</div>
+            <div id="upgrade-source-slot">Выбери скин снизу</div>
           </div>
 
           <div class="upgrade-wheel-box">
@@ -142,7 +132,7 @@
                 <div class="upgrade-arrow">▼</div>
               </div>
               <div class="chance-inner">
-                <small>ШАНС</small>
+                <small style="color:var(--text-muted);font-size:11px;font-weight:700;">ШАНС</small>
                 <span id="upgrade-chance-text">0.00%</span>
               </div>
             </div>
@@ -156,60 +146,54 @@
               </select>
             </div>
 
-            <button id="do-upgrade-btn" class="primary-btn big-btn" onclick="executeUpgrade()" disabled>ПРОКАЧАТЬ</button>
+            <button id="do-upgrade-btn" class="primary-btn big-btn" disabled onclick="executeUpgrade()">Апгрейднуть</button>
           </div>
 
           <div class="upgrade-slot-box">
-            <div class="slot-label">Выберите предмет, который хотите получить</div>
-            <div id="upgrade-target-slot" class="slot-stage">
-              <div class="plus-sq-badge">+</div>
-              <span>Выбери цель справа</span>
-            </div>
+            <div class="slot-label">Желаемый скин</div>
+            <div id="upgrade-target-slot">Выбери цель справа</div>
           </div>
         </div>
 
-        <div class="upgrade-bottom-panels">
-          <div class="upgrade-panel">
-            <div class="upgrade-panel-head">
-              <h3>Мои предметы</h3>
+        <div class="upgrade-inventories">
+          <div class="inv-column">
+            <div class="section-header">
+              <h3>Твой инвентарь</h3>
               <select id="upg-inv-sort" onchange="renderUpgradeMyInventory()">
                 <option value="price-desc">Сначала дорогие</option>
                 <option value="price-asc">Сначала дешёвые</option>
-                <option value="rarity-desc">По редкости</option>
+                <option value="rarity-desc">По редкости (высшие)</option>
               </select>
             </div>
-            <div id="upgrade-my-cards" class="upg-square-grid"></div>
+            <div id="upgrade-my-cards" class="upg-square-grid upgrade-my-inv-scroll"></div>
           </div>
 
-          <div class="upgrade-panel">
-            <div class="upgrade-panel-head">
-              <h3>Выберите предмет (<span id="upg-targets-count">0</span>)</h3>
-              <div class="upg-filters">
-                <input type="text" id="upg-target-search" class="nick-input upg-search-input" placeholder="Название..." oninput="renderUpgradeTargets()">
-                <input type="number" id="upg-price-min" class="nick-input upg-price-input" placeholder="Цена от ₽" min="0" oninput="renderUpgradeTargets()">
-                <input type="number" id="upg-price-max" class="nick-input upg-price-input" placeholder="Цена до ₽" min="0" oninput="renderUpgradeTargets()">
-                <button class="secondary-btn upg-reset-btn" onclick="resetUpgradeFilters()" title="Сбросить фильтры">✕</button>
+          <div class="inv-column">
+            <div class="section-header">
+              <h3>Все цели (<span id="upg-targets-count">0</span>)</h3>
+              <div class="upgrade-target-controls">
+                <input type="text" id="upg-target-search" class="upg-search-input" placeholder="Поиск по оружию или скину..." oninput="renderUpgradeTargets()">
                 <select id="upg-target-edition-filter" onchange="renderUpgradeTargets()">
-                  <option value="all">Все</option>
-                  <option value="normal">Обычный</option>
+                  <option value="all">Все (Base / ST / Souvenir)</option>
+                  <option value="normal">Обычные</option>
                   <option value="stattrak">StatTrak™</option>
-                  <option value="souvenir">★ Сувенир</option>
+                  <option value="souvenir">Сувенир</option>
                 </select>
                 <select id="upg-target-wear-filter" onchange="renderUpgradeTargets()">
-                  <option value="FN" selected>FN</option>
-                  <option value="MW">MW</option>
-                  <option value="FT">FT</option>
-                  <option value="WW">WW</option>
-                  <option value="BS">BS</option>
+                  <option value="FN">FN (Factory New)</option>
+                  <option value="MW">MW (Minimal Wear)</option>
+                  <option value="FT">FT (Field-Tested)</option>
+                  <option value="WW">WW (Well-Worn)</option>
+                  <option value="BS">BS (Battle-Scarred)</option>
                 </select>
                 <select id="upg-target-sort" onchange="renderUpgradeTargets()">
-                  <option value="price-asc">Цена ↑</option>
-                  <option value="price-desc">Цена ↓</option>
-                  <option value="rarity-desc">Редкость</option>
+                  <option value="price-asc">Цена: от меньшей</option>
+                  <option value="price-desc">Цена: от большей</option>
+                  <option value="rarity-desc">По редкости (высшие)</option>
                 </select>
               </div>
             </div>
-            <div id="upgrade-target-cards" class="upg-square-grid"></div>
+            <div id="upgrade-target-cards" class="upg-square-grid upgrade-all-targets-scroll"></div>
           </div>
         </div>
       </section>
@@ -217,40 +201,42 @@
       <!-- ДУЭЛИ -->
       <section id="tab-duels" class="tab-content">
         <div class="section-header">
-          <h2>ДУЭЛИ КЕЙСОВ</h2>
-          <div id="duel-status-badge" class="duel-status-badge">Ботов: 1 • Приз: +400 ₽</div>
+          <h2>Дуэли кейсов</h2>
+          <div id="duel-status-badge" class="hint-text">Лобби готово</div>
         </div>
 
-        <div id="duel-lobby-view" class="duel-lobby-card">
+        <div id="duel-lobby-view" class="duel-panel">
           <div class="duel-lobby-top">
             <div>
               <h3>Лобби дуэли</h3>
-              <p class="hint-text">Кто выбьет более дорогой или редкий скин — забирает награду.</p>
+              <p class="hint-text">Выбери 1 или 2 ботов, выбери свой кейс — победитель забирает дроп и +400 ₽ сверху!</p>
             </div>
-            <div id="duel-bot-count-selector" class="multi-open-selector">
+            <div class="multi-open-selector" id="duel-bot-count-selector">
               <button class="count-chip active" data-bots="1" onclick="setDuelBotCount(1)">1 бот</button>
               <button class="count-chip" data-bots="2" onclick="setDuelBotCount(2)">2 бота</button>
             </div>
           </div>
-          <div id="duel-lobby-slots" class="duel-lobby-slots"></div>
-          <div style="margin-top:18px;">
-            <button id="start-duel-btn" class="primary-btn big-btn" onclick="startDuelMatch()">Начать дуэль</button>
+          <div id="duel-lobby-slots" class="duel-slots-grid"></div>
+          <div class="duel-actions-row">
+            <button id="duel-start-match-btn" class="primary-btn big-btn" onclick="startDuelMatch()">Начать матч</button>
           </div>
         </div>
 
-        <div id="duel-case-select-view" class="hidden">
-          <button class="back-btn" onclick="resetDuelToLobby()">← Назад в лобби</button>
-          <h3 style="margin-top:12px;">Выбери кейс для дуэли</h3>
-          <p id="duel-bot-picks-info" class="hint-text" style="margin:6px 0 14px;"></p>
+        <div id="duel-case-select-view" class="duel-panel hidden">
+          <div class="section-header">
+            <h3>Выбери свой кейс</h3>
+            <button class="secondary-btn" onclick="resetDuelToLobby()">← В лобби</button>
+          </div>
+          <div id="duel-bot-picks-info" class="duel-picks-banner"></div>
           <div id="duel-cases-grid" class="cases-grid"></div>
         </div>
 
-        <div id="duel-arena-view" class="hidden">
+        <div id="duel-arena-view" class="duel-panel hidden">
           <div class="section-header">
-            <button class="back-btn" onclick="resetDuelToLobby()">← В лобби</button>
-            <div id="duel-verdict-banner" class="duel-verdict-banner">Крутим рулетки...</div>
-            <button id="duel-rematch-btn" class="primary-btn hidden" onclick="startDuelMatch()">Ещё дуэль</button>
+            <h3>Бой на кейсах</h3>
+            <button id="duel-rematch-btn" class="secondary-btn hidden" onclick="resetDuelToLobby()">Новый матч</button>
           </div>
+          <div id="duel-verdict-banner" class="duel-verdict-banner">Крутим кейсы...</div>
           <div id="duel-competitors-grid" class="duel-competitors-grid"></div>
         </div>
       </section>
@@ -258,31 +244,44 @@
       <!-- ТРЕЙДЫ -->
       <section id="tab-trade" class="tab-content">
         <div class="section-header">
-          <h2>ОБМЕН С БОТОМ</h2>
+          <h2>Трейд с ботом</h2>
+          <button class="secondary-btn" onclick="startBotTrade()">Сбросить обмен</button>
         </div>
-        <div id="trade-arena" class="hidden">
-          <div class="trade-boxes">
-            <div class="trade-side">
-              <h3>Ты отдаёшь (<span id="my-trade-sum">0</span> ₽)</h3>
-              <div id="my-trade-offer" class="trade-slot-grid"></div>
-            </div>
-            <div class="trade-side">
-              <h3>Бот предлагает (<span id="bot-trade-sum">0</span> ₽)</h3>
-              <div id="bot-trade-offer" class="trade-slot-grid"></div>
-            </div>
+
+        <div id="trade-arena" class="trade-arena hidden">
+          <div class="trade-side">
+            <h3>Твоё предложение (<span id="my-trade-sum">0</span> ₽)</h3>
+            <div id="my-trade-offer" class="trade-box cards-grid small-grid"></div>
           </div>
-          <div style="margin:14px 0;">
-            <button id="confirm-trade-btn" class="primary-btn big-btn" onclick="confirmTrade()" disabled>Подтвердить обмен</button>
+
+          <div class="trade-center">
+            <div style="font-size:28px;">⇄</div>
+            <button id="confirm-trade-btn" class="primary-btn" disabled onclick="confirmTrade()">Обменять</button>
           </div>
-          <h3>Твой инвентарь (<span id="trade-inv-count">0</span>)</h3>
-          <div id="trade-my-inv" class="cards-grid"></div>
+
+          <div class="trade-side">
+            <h3>Предложение бота (<span id="bot-trade-sum">0</span> ₽)</h3>
+            <div id="bot-trade-offer" class="trade-box cards-grid small-grid"></div>
+          </div>
         </div>
+
+        <div class="section-header" style="margin-top:20px;">
+          <h3>Твой инвентарь для обмена (<span id="trade-inv-count">0</span>)</h3>
+        </div>
+        <div id="trade-my-inv" class="cards-grid small-grid"></div>
       </section>
 
       <!-- ИНВЕНТАРЬ -->
       <section id="tab-collection" class="tab-content">
+        <div class="stats-bar">
+          <div class="stat-card"><span>Всего скинов</span><b id="stat-total-cards">0</b></div>
+          <div class="stat-card"><span>Стоимость инвентаря</span><b id="stat-inv-value">0 ₽</b></div>
+          <div class="stat-card"><span>Открыто кейсов/паков</span><b id="stat-opened">0</b></div>
+          <div class="stat-card"><span>Успешных апгрейдов</span><b id="stat-upgrades">0</b></div>
+        </div>
+
         <div class="section-header">
-          <h2>ИНВЕНТАРЬ</h2>
+          <h2>Твой инвентарь</h2>
           <div class="sort-controls">
             <select id="col-sort" onchange="renderCollection()">
               <option value="price-desc">Сначала дорогие</option>
@@ -293,315 +292,317 @@
             <button class="secondary-btn" onclick="sellAllDuplicates()">Продать дубликаты</button>
             <select id="sell-rarity-select"></select>
             <button class="secondary-btn" onclick="sellBySelectedRarity()">Продать редкость</button>
-            <button class="secondary-btn" style="color:#ff5d7d;" onclick="sellAllInventoryCards()">Продать всё</button>
+            <button class="secondary-btn" style="color:#f87171;" onclick="sellAllInventoryCards()">Продать всё</button>
           </div>
         </div>
 
-        <div class="stats-bar">
-          <div class="stat-pill">Скинов: <b id="stat-total-cards">0</b></div>
-          <div class="stat-pill">Стоимость: <b id="stat-inv-value">0 ₽</b></div>
-          <div class="stat-pill">Открыто кейсов: <b id="stat-opened">0</b></div>
-          <div class="stat-pill">Успешных апгрейдов: <b id="stat-upgrades">0</b></div>
-        </div>
-
-        <div id="collection-grid" class="cards-grid"></div>
+        <div id="collection-grid" class="cards-grid collection-compact-grid"></div>
       </section>
 
-      <!-- КОНТРАКТЫ -->
+      <!-- КРАФТЫ -->
       <section id="tab-craft" class="tab-content">
         <div class="section-header">
-          <h2>КОНТРАКТ ОБМЕНА (10 → 1)</h2>
-          <p class="hint-text">Выбери 10 скинов одной редкости для получения скина следующей редкости.</p>
+          <h2>Контракт обмена (10 скинов одной редкости → 1 скин выше)</h2>
         </div>
 
-        <div class="craft-arena">
-          <div id="craft-selected-slots" class="craft-slots-row"></div>
-          <div class="craft-action-row">
-            <div>Выбрано: <b id="craft-count">0</b> / 10 • Средняя цена: <b id="craft-avg-price">0</b> ₽</div>
-            <button id="do-craft-btn" class="primary-btn big-btn" onclick="executeCraft()" disabled>Подписать контракт</button>
+        <div class="craft-slots-bar">
+          <div id="craft-selected-slots" class="craft-slots"></div>
+          <div class="craft-action-box">
+            <div>Выбрано: <b id="craft-count">0</b> / 10</div>
+            <div>Средняя цена: <b id="craft-avg-price">0</b> ₽</div>
+            <button id="do-craft-btn" class="primary-btn" disabled onclick="executeCraft()">Скрафтить</button>
           </div>
         </div>
 
         <div class="section-header" style="margin-top:20px;">
-          <h3>Выбор скинов для контракта</h3>
+          <h3>Выбери 10 скинов одной редкости</h3>
           <select id="craft-sort" onchange="renderCraftUI()">
-            <option value="rarity-asc">По редкости (низшие)</option>
-            <option value="rarity-desc">По редкости (высшие)</option>
+            <option value="rarity-asc">Сначала низкая редкость</option>
+            <option value="rarity-desc">Сначала высокая редкость</option>
             <option value="price-asc">Сначала дешёвые</option>
             <option value="price-desc">Сначала дорогие</option>
           </select>
         </div>
-        <div id="craft-inv-grid" class="cards-grid"></div>
+        <div id="craft-inv-grid" class="cards-grid small-grid"></div>
       </section>
 
       <!-- АДМИНКА -->
       <section id="tab-admin" class="tab-content">
-        <div id="admin-login-box" class="admin-login-card">
-          <h2>Вход в админ-панель</h2>
-          <input type="password" id="admin-pass-input" class="nick-input" placeholder="Пароль" onkeydown="if(event.key==='Enter') checkAdminPass()">
+        <div id="admin-login-box" class="admin-login">
+          <h3>Вход в админ-панель</h3>
+          <input type="password" id="admin-pass-input" placeholder="Пароль" onkeydown="if(event.key==='Enter')checkAdminPass()">
           <button class="primary-btn" onclick="checkAdminPass()">Войти</button>
         </div>
 
         <div id="admin-panel-content" class="hidden">
-          <div class="section-header">
-            <h2>АДМИН-ПАНЕЛЬ</h2>
-            <div id="admin-balance-status" class="hint-text"></div>
+          <!-- ВЫДАЧА БАЛАНСА -->
+          <div class="admin-block">
+            <h3>Выдача баланса</h3>
+            <div class="form-row">
+              <input type="text" id="admin-balance-target" placeholder="Ник / аккаунт (пусто = себе)">
+              <input type="number" id="admin-balance-amount" placeholder="Сумма (₽)" step="any">
+              <button class="primary-btn" onclick="adminGiveBalance('add')">Выдать / Списать</button>
+              <button class="secondary-btn" onclick="adminGiveBalance('set')">Установить баланс</button>
+            </div>
+            <div class="admin-cloud-actions" style="margin-top:10px;">
+              <button type="button" class="secondary-btn" onclick="adminQuickGiveBalance(1000)">+1 000 ₽ себе</button>
+              <button type="button" class="secondary-btn" onclick="adminQuickGiveBalance(10000)">+10 000 ₽ себе</button>
+              <button type="button" class="secondary-btn" onclick="adminQuickGiveBalance(100000)">+100 000 ₽ себе</button>
+            </div>
+            <div id="admin-balance-status" class="hint-text" style="margin-top:8px;font-weight:700;"></div>
           </div>
 
-          <div class="admin-grid">
-            <div class="admin-card">
-              <h3>Баланс и звук</h3>
-              <div class="admin-row">
-                <input type="text" id="admin-balance-target" class="nick-input" placeholder="Ник (необязательно)">
-                <input type="number" id="admin-balance-amount" class="nick-input" value="5000" placeholder="Сумма ₽">
-              </div>
-              <div class="admin-row" style="margin-top:8px;">
-                <button class="primary-btn" onclick="adminGiveBalance('add')">+ Добавить ₽</button>
-                <button class="secondary-btn" onclick="adminGiveBalance('set')">Установить ₽</button>
-                <button class="secondary-btn" onclick="adminQuickGiveBalance(10000)">+10k ₽</button>
-                <button class="secondary-btn" onclick="adminQuickGiveBalance(100000)">+100k ₽</button>
-              </div>
-              <div class="admin-row" style="margin-top:14px;">
+          <!-- МНОЖИТЕЛИ STATTRAK И СУВЕНИРА -->
+          <div class="admin-block">
+            <h3>Настройки StatTrak™ и Сувенирной версии</h3>
+            <p class="hint-text">Сувенирная версия — самая дорогая. В настройках каждого скина можно отдельно разрешить/запретить StatTrak и Сувенир.</p>
+            <div class="form-row">
+              <label class="color-pick-label">
+                <span>Множитель StatTrak:</span>
+                <input type="number" id="cfg-st-mult" step="0.1" min="1" style="width:90px;" onchange="saveSpecialRates()">
+              </label>
+              <label class="color-pick-label">
+                <span>Шанс StatTrak (0..1):</span>
+                <input type="number" id="cfg-st-chance" step="0.01" min="0" max="1" style="width:90px;" onchange="saveSpecialRates()">
+              </label>
+              <label class="color-pick-label">
+                <span>Множитель Сувенир:</span>
+                <input type="number" id="cfg-souv-mult" step="0.1" min="1" style="width:90px;" onchange="saveSpecialRates()">
+              </label>
+              <label class="color-pick-label">
+                <span>Шанс Сувенир (0..1):</span>
+                <input type="number" id="cfg-souv-chance" step="0.01" min="0" max="1" style="width:90px;" onchange="saveSpecialRates()">
+              </label>
+            </div>
+          </div>
+
+          <!-- ОБЛАКО -->
+          <div class="admin-block">
+            <h3>Облачная синхронизация (JSONBin.io)</h3>
+            <div class="form-row">
+              <input type="text" id="cfg-bin-id" placeholder="Bin ID">
+              <input type="text" id="cfg-api-key" placeholder="X-Master-Key">
+              <button class="secondary-btn" onclick="saveCloudConfig()">Сохранить ключи</button>
+            </div>
+            <div class="admin-cloud-actions">
+              <button id="push-cloud-catalog-btn" class="primary-btn" onclick="pushCatalogToCloud()">☁ Залить всё в облако</button>
+              <button class="secondary-btn" onclick="syncCatalogFromCloud(true)">⬇ Загрузить из облака</button>
+            </div>
+          </div>
+
+          <!-- КАТЕГОРИИ КЕЙСОВ -->
+          <div class="admin-block">
+            <h3>Категории кейсов и звук</h3>
+            <div class="form-row">
+              <input type="text" id="new-case-cat-name" placeholder="Название категории">
+              <button class="primary-btn" onclick="adminAddCaseCategory()">+ Категория</button>
+              <label class="color-pick-label">
                 <span>Громкость:</span>
                 <input type="range" id="sound-volume-slider" min="0" max="100" value="45" oninput="setSoundVolume(this.value)">
-                <b id="sound-volume-label">45%</b>
-              </div>
+                <span id="sound-volume-label">45%</span>
+              </label>
             </div>
-
-            <div class="admin-card">
-              <h3>Облачная синхронизация (JSONBin.io)</h3>
-              <div class="admin-row">
-                <input type="text" id="cfg-bin-id" class="nick-input" placeholder="Bin ID">
-                <input type="password" id="cfg-api-key" class="nick-input" placeholder="X-Master-Key">
-              </div>
-              <div class="admin-row" style="margin-top:10px;">
-                <button class="secondary-btn" onclick="saveCloudConfig()">Сохранить ключи</button>
-                <button id="push-cloud-catalog-btn" class="primary-btn" onclick="pushCatalogToCloud()">☁ Залить в облако</button>
-                <button class="secondary-btn" onclick="syncCatalogFromCloud(true)">⬇ Скачать из облака</button>
-              </div>
-            </div>
-
-            <div class="admin-card">
-              <h3>Множители и шансы StatTrak™ / Сувенир</h3>
-              <div class="admin-row">
-                <label>StatTrak™ цена x<input type="number" id="cfg-st-mult" step="0.1" class="nick-input" style="width:75px;"></label>
-                <label>Шанс (0..1)<input type="number" id="cfg-st-chance" step="0.01" class="nick-input" style="width:75px;"></label>
-              </div>
-              <div class="admin-row" style="margin-top:8px;">
-                <label>★ Сувенир цена x<input type="number" id="cfg-souv-mult" step="0.1" class="nick-input" style="width:75px;"></label>
-                <label>Шанс (0..1)<input type="number" id="cfg-souv-chance" step="0.01" class="nick-input" style="width:75px;"></label>
-              </div>
-              <button class="primary-btn" style="margin-top:10px;" onclick="saveSpecialRates()">Сохранить коэффициенты</button>
-            </div>
-
-            <div class="admin-card">
-              <h3>Категории кейсов</h3>
-              <div class="admin-row">
-                <input type="text" id="new-case-cat-name" class="nick-input" placeholder="Название категории">
-                <button class="primary-btn" onclick="adminAddCaseCategory()">Добавить</button>
-              </div>
-              <div id="admin-case-categories-list" style="margin-top:10px;"></div>
-            </div>
+            <div id="admin-case-categories-list" class="admin-categories-list"></div>
           </div>
 
-          <div class="admin-card" style="margin-top:16px;">
-            <h3>Редкости и шансы выпадения</h3>
-            <div class="admin-row">
-              <input type="text" id="new-rar-name" class="nick-input" placeholder="Название редкости">
-              <label>Цветов: <input type="number" id="new-rar-color-count" min="1" max="5" value="2" class="nick-input" style="width:60px;" onchange="renderNewRarityColorInputs()"></label>
-              <div id="new-rar-colors-box" style="display:flex;gap:6px;"></div>
-              <input type="text" id="new-rar-weight" class="nick-input" style="width:90px;" placeholder="Шанс кейса">
-              <button class="primary-btn" onclick="adminAddRarity()">Добавить редкость</button>
+          <!-- РЕДКОСТИ -->
+          <div class="admin-block">
+            <h3>Редкости скинов (перетащи для смены иерархии)</h3>
+            <div class="form-row">
+              <input type="text" id="new-rar-name" placeholder="Название (напр. Тайное)">
+              <label class="color-pick-label">
+                <span>Цветов:</span>
+                <select id="new-rar-color-count" onchange="renderNewRarityColorInputs()">
+                  <option value="1">1 цвет</option>
+                  <option value="2" selected>2 цвета</option>
+                  <option value="3">3 цвета</option>
+                  <option value="4">4 цвета</option>
+                  <option value="5">5 цветов</option>
+                </select>
+              </label>
+              <div id="new-rar-colors-box" class="rar-colors-inline"></div>
+              <input type="text" id="new-rar-weight" placeholder="Вес кейсы (10)" style="width:120px;">
+              <input type="text" id="new-rar-pack-weight" placeholder="Вес паки (10)" style="width:120px;">
+              <button class="primary-btn" onclick="adminAddRarity()">+ Добавить редкость</button>
             </div>
-            <div id="admin-rarities-list" class="rarities-admin-grid" style="margin-top:12px;"></div>
+            <div id="admin-rarities-list" class="admin-rarities-grid"></div>
           </div>
 
-          <div class="admin-card" style="margin-top:16px;">
-            <h3>Добавить новый скин</h3>
-            <div class="creator-split">
-              <div class="creator-form">
-                <div class="admin-row">
-                  <input type="text" id="new-skin-weapon" class="nick-input" placeholder="Оружие (напр. AK-47)" oninput="updateSkinPreview()">
-                  <input type="text" id="new-skin-name" class="nick-input" placeholder="Название скина (напр. Redline)" oninput="updateSkinPreview()">
+          <!-- СОЗДАТЬ КЕЙС -->
+          <div class="admin-block">
+            <h3>Создать кейс</h3>
+            <div class="card-creator-layout">
+              <div>
+                <div class="form-row">
+                  <input type="text" id="new-case-name" placeholder="Название кейса" oninput="updateCasePreview()">
+                  <input type="number" id="new-case-price" placeholder="Цена (₽)" value="500" oninput="updateCasePreview()">
+                  <select id="new-case-category" onchange="updateCasePreview()"></select>
+                  <input type="text" id="new-case-img" placeholder="URL обложки кейса" oninput="updateCasePreview()">
                 </div>
-                <div class="admin-row" style="margin-top:8px;">
-                  <select id="new-skin-rarity" onchange="updateSkinPreview()"></select>
-                  <input type="number" id="new-skin-price" class="nick-input" placeholder="Базовая цена FN (₽)" value="2520" oninput="updateSkinPreview()">
+                <div id="admin-case-cards-selector" class="checkbox-grid" onchange="updateCasePreview()"></div>
+                <div class="form-row">
+                  <button class="primary-btn" onclick="adminAddCase()">+ Создать кейс</button>
                 </div>
-                <div class="admin-row" style="margin-top:8px;">
-                  <input type="text" id="new-skin-img" class="nick-input" placeholder="URL картинки скина" oninput="updateSkinPreview()">
-                </div>
-                <div class="admin-row" style="margin-top:8px;">
-                  <label><input type="checkbox" id="new-skin-has-st" checked onchange="updateSkinPreview()"> Может быть StatTrak™</label>
-                  <label><input type="checkbox" id="new-skin-has-souv" onchange="updateSkinPreview()"> Может быть ★ Сувениром</label>
-                </div>
-                <div class="admin-row" style="margin-top:8px;">
-                  <select id="preview-edition" onchange="updateSkinPreview()">
-                    <option value="normal">Превью: Обычный</option>
-                    <option value="stattrak">Превью: StatTrak™</option>
-                    <option value="souvenir">Превью: ★ Сувенир</option>
-                  </select>
-                  <select id="preview-wear" onchange="updateSkinPreview()">
-                    <option value="FN">FN</option>
-                    <option value="MW">MW</option>
-                    <option value="FT" selected>FT</option>
-                    <option value="WW">WW</option>
-                    <option value="BS">BS</option>
-                  </select>
-                  <button class="primary-btn" onclick="adminAddSkin()">Создать скин</button>
-                </div>
-              </div>
-              <div id="skin-creator-preview" class="creator-preview-box"></div>
-            </div>
-          </div>
-
-          <div id="admin-edit-skin-panel" class="admin-card hidden" style="margin-top:16px;border-color:#449eff;">
-            <h3>Редактирование скина: <span id="edit-skin-heading"></span></h3>
-            <div class="creator-split">
-              <div class="creator-form">
-                <div class="admin-row">
-                  <input type="text" id="edit-skin-weapon" class="nick-input" placeholder="Оружие" oninput="updateEditSkinPreview()">
-                  <input type="text" id="edit-skin-name" class="nick-input" placeholder="Название" oninput="updateEditSkinPreview()">
-                </div>
-                <div class="admin-row" style="margin-top:8px;">
-                  <select id="edit-skin-rarity" onchange="updateEditSkinPreview()"></select>
-                  <input type="number" id="edit-skin-price" class="nick-input" placeholder="Цена FN" oninput="updateEditSkinPreview()">
-                </div>
-                <div class="admin-row" style="margin-top:8px;">
-                  <input type="text" id="edit-skin-img" class="nick-input" placeholder="URL картинки" oninput="updateEditSkinPreview()">
-                </div>
-                <div class="admin-row" style="margin-top:8px;">
-                  <label><input type="checkbox" id="edit-skin-has-st" onchange="updateEditSkinPreview()"> StatTrak™</label>
-                  <label><input type="checkbox" id="edit-skin-has-souv" onchange="updateEditSkinPreview()"> ★ Сувенир</label>
-                </div>
-                <div class="admin-row" style="margin-top:10px;">
-                  <button class="primary-btn" onclick="saveEditedSkin()">Сохранить изменения</button>
-                  <button class="secondary-btn" onclick="cancelEditSkin()">Отмена</button>
-                  <button class="secondary-btn" style="color:#ff5d7d;" onclick="deleteEditingSkin()">Удалить скин</button>
-                </div>
-              </div>
-              <div id="edit-skin-preview" class="creator-preview-box"></div>
-            </div>
-          </div>
-
-          <div class="admin-card" style="margin-top:16px;">
-            <h3>Создать новый кейс</h3>
-            <div class="creator-split">
-              <div class="creator-form">
-                <div class="admin-row">
-                  <input type="text" id="new-case-name" class="nick-input" placeholder="Название кейса" oninput="updateCasePreview()">
-                  <input type="number" id="new-case-price" class="nick-input" placeholder="Цена ₽" value="500" oninput="updateCasePreview()">
-                  <select id="new-case-category"></select>
-                </div>
-                <div class="admin-row" style="margin-top:8px;">
-                  <input type="text" id="new-case-img" class="nick-input" placeholder="URL картинки кейса" oninput="updateCasePreview()">
-                </div>
-                <div id="admin-case-skins-selector" class="case-skins-checklist" style="margin-top:10px;"></div>
-                <button class="primary-btn" style="margin-top:10px;" onclick="adminAddCase()">Создать кейс</button>
               </div>
               <div id="case-creator-preview" class="creator-preview-box"></div>
             </div>
           </div>
 
-          <div id="admin-edit-case-panel" class="admin-card hidden" style="margin-top:16px;border-color:#449eff;">
-            <h3>Редактирование кейса: <span id="edit-case-heading"></span></h3>
-            <div class="creator-split">
-              <div class="creator-form">
-                <div class="admin-row">
-                  <input type="text" id="edit-case-name" class="nick-input" oninput="updateEditCasePreview()">
-                  <input type="number" id="edit-case-price" class="nick-input" oninput="updateEditCasePreview()">
-                  <select id="edit-case-category"></select>
-                </div>
-                <div class="admin-row" style="margin-top:8px;">
-                  <input type="text" id="edit-case-img" class="nick-input" oninput="updateEditCasePreview()">
-                </div>
-                <div id="admin-edit-case-skins-selector" class="case-skins-checklist" style="margin-top:10px;"></div>
-                <div class="admin-row" style="margin-top:10px;">
-                  <button class="primary-btn" onclick="saveEditedCase()">Сохранить кейс</button>
-                  <button class="secondary-btn" onclick="cancelEditCase()">Отмена</button>
-                  <button class="secondary-btn" style="color:#ff5d7d;" onclick="deleteEditingCase()">Удалить кейс</button>
-                </div>
+          <!-- РЕДАКТИРОВАНИЕ КЕЙСОВ -->
+          <div class="admin-block">
+            <h3>Управление кейсами (<span id="admin-cases-count">0</span>)</h3>
+            <div id="admin-edit-case-panel" class="hidden" style="margin-bottom:18px;padding:14px;border:1px solid var(--accent-gold);border-radius:12px;">
+              <div class="section-header">
+                <h4>Редактирование: <span id="edit-case-heading"></span></h4>
+                <button class="secondary-btn" onclick="cancelEditCase()">Закрыть</button>
               </div>
-              <div id="edit-case-preview" class="creator-preview-box"></div>
+              <div class="card-creator-layout">
+                <div>
+                  <div class="form-row">
+                    <input type="text" id="edit-case-name" placeholder="Название" oninput="updateEditCasePreview()">
+                    <input type="number" id="edit-case-price" placeholder="Цена" oninput="updateEditCasePreview()">
+                    <select id="edit-case-category" onchange="updateEditCasePreview()"></select>
+                    <input type="text" id="edit-case-img" placeholder="URL обложки" oninput="updateEditCasePreview()">
+                  </div>
+                  <div id="admin-edit-case-cards-selector" class="checkbox-grid" onchange="updateEditCasePreview()"></div>
+                  <div class="form-row">
+                    <button class="primary-btn" onclick="saveEditedCase()">Сохранить кейс</button>
+                    <button class="secondary-btn" style="color:#f87171;" onclick="deleteEditingCase()">Удалить кейс</button>
+                  </div>
+                </div>
+                <div id="edit-case-preview" class="creator-preview-box"></div>
+              </div>
+            </div>
+            <div id="admin-cases-list" class="admin-cases-manage-grid"></div>
+          </div>
+
+          <!-- СОЗДАТЬ СКИН -->
+          <div class="admin-block">
+            <h3>Добавить скин</h3>
+            <div class="card-creator-layout">
+              <div>
+                <div class="form-row">
+                  <input type="text" id="new-skin-weapon" placeholder="Оружие (напр. AK-47)" oninput="updateCardPreview()">
+                  <input type="text" id="new-skin-name" placeholder="Название скина (напр. Redline)" oninput="updateCardPreview()">
+                  <select id="new-skin-rarity" onchange="updateCardPreview()"></select>
+                  <input type="number" id="new-skin-price" placeholder="Базовая цена FN (₽)" value="1200" oninput="updateCardPreview()">
+                  <input type="text" id="new-skin-img" placeholder="URL картинки скина" oninput="updateCardPreview()">
+                </div>
+                <div class="form-row">
+                  <label class="holo-check-label">
+                    <input type="checkbox" id="new-skin-has-st" checked onchange="updateCardPreview()"> Есть StatTrak™ версия
+                  </label>
+                  <label class="holo-check-label">
+                    <input type="checkbox" id="new-skin-has-souv" checked onchange="updateCardPreview()"> Есть Сувенирная версия (самая дорогая)
+                  </label>
+                </div>
+                <div class="form-row">
+                  <span class="hint-text">Предпросмотр в админке:</span>
+                  <select id="preview-edition" onchange="updateCardPreview()">
+                    <option value="normal">Обычный</option>
+                    <option value="stattrak">StatTrak™</option>
+                    <option value="souvenir">Сувенир</option>
+                  </select>
+                  <select id="preview-wear" onchange="updateCardPreview()">
+                    <option value="FN">FN</option>
+                    <option value="MW">MW</option>
+                    <option value="FT">FT</option>
+                    <option value="WW">WW</option>
+                    <option value="BS">BS</option>
+                  </select>
+                </div>
+                <button class="primary-btn" onclick="adminAddCard()">+ Добавить скин</button>
+              </div>
+              <div id="card-creator-preview" class="creator-preview-box"></div>
             </div>
           </div>
 
-          <div class="admin-card" style="margin-top:16px;">
-            <h3>Все кейсы (<span id="admin-cases-count">0</span>)</h3>
-            <div id="admin-cases-list" class="admin-cases-grid" style="margin-top:12px;"></div>
-          </div>
-
-          <div class="admin-card" style="margin-top:16px;">
-            <h3>Все скины (<span id="admin-skins-count">0</span>) — нажми для редактирования</h3>
-            <div id="admin-all-skins" class="cards-grid" style="margin-top:12px;"></div>
+          <!-- РЕДАКТИРОВАНИЕ СКИНОВ -->
+          <div class="admin-block">
+            <h3>Все скины (<span id="admin-cards-count">0</span>) — кликни для редактирования</h3>
+            <div id="admin-edit-card-panel" class="hidden" style="margin-bottom:18px;padding:14px;border:1px solid var(--accent-gold);border-radius:12px;">
+              <div class="section-header">
+                <h4>Редактирование скина: <span id="edit-skin-heading"></span></h4>
+                <button class="secondary-btn" onclick="cancelEditCard()">Закрыть</button>
+              </div>
+              <div class="card-creator-layout">
+                <div>
+                  <div class="form-row">
+                    <input type="text" id="edit-skin-weapon" placeholder="Оружие" oninput="updateEditCardPreview()">
+                    <input type="text" id="edit-skin-name" placeholder="Название скина" oninput="updateEditCardPreview()">
+                    <select id="edit-skin-rarity" onchange="updateEditCardPreview()"></select>
+                    <input type="number" id="edit-skin-price" placeholder="Базовая цена FN (₽)" oninput="updateEditCardPreview()">
+                    <input type="text" id="edit-skin-img" placeholder="URL картинки" oninput="updateEditCardPreview()">
+                  </div>
+                  <div class="form-row">
+                    <label class="holo-check-label">
+                      <input type="checkbox" id="edit-skin-has-st" onchange="updateEditCardPreview()"> Есть StatTrak™ версия
+                    </label>
+                    <label class="holo-check-label">
+                      <input type="checkbox" id="edit-skin-has-souv" onchange="updateEditCardPreview()"> Есть Сувенирная версия
+                    </label>
+                  </div>
+                  <div class="form-row">
+                    <button class="primary-btn" onclick="saveEditedCard()">Сохранить скин</button>
+                    <button class="secondary-btn" style="color:#f87171;" onclick="deleteEditingCard()">Удалить скин</button>
+                  </div>
+                </div>
+                <div id="edit-card-preview" class="creator-preview-box"></div>
+              </div>
+            </div>
+            <div id="admin-all-cards" class="cards-grid small-grid"></div>
           </div>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- МОДАЛКА ВЫИГРЫША -->
-  <div id="win-modal" class="modal hidden">
-    <div class="modal-content">
-      <h2 id="win-modal-title">Тебе выпало!</h2>
-      <div id="win-skin-container" class="win-skins-flex"></div>
+  <!-- СТАРТОВЫЙ БАЛАНС -->
+  <div id="start-balance-modal" class="modal hidden">
+    <div class="modal-content start-balance-modal-box">
+      <h3>Выбор стартового баланса</h3>
+      <p class="hint-text">Выбери стартовую сумму от <b>1 ₽</b> до <b>1500 ₽</b>.</p>
+      <div class="start-balance-readout"><span id="start-balance-display">1500</span> ₽</div>
+      <input type="range" id="start-balance-range" min="1" max="1500" value="1500" class="start-balance-slider" oninput="syncStartBalanceFromRange(this.value)">
+      <input type="number" id="start-balance-input" min="1" max="1500" value="1500" style="width:140px;text-align:center;" oninput="syncStartBalanceFromInput(this.value)">
+      <div class="start-balance-presets">
+        <button type="button" class="secondary-btn" onclick="setStartBalanceValue(1)">1 ₽</button>
+        <button type="button" class="secondary-btn" onclick="setStartBalanceValue(500)">500 ₽</button>
+        <button type="button" class="secondary-btn" onclick="setStartBalanceValue(1000)">1000 ₽</button>
+        <button type="button" class="secondary-btn" onclick="setStartBalanceValue(1500)">1500 ₽</button>
+      </div>
       <div class="modal-actions">
-        <button class="primary-btn" onclick="closeWinModal()">В инвентарь</button>
-        <button id="sell-won-btn" class="secondary-btn" onclick="sellWonSkin()">Продать</button>
+        <button type="button" class="primary-btn big-btn" onclick="confirmStartBalance()">Начать игру</button>
       </div>
     </div>
   </div>
 
-  <!-- МОДАЛКА ХАРАКТЕРИСТИК СКИНА -->
-  <div id="skin-preview-modal" class="modal hidden" onclick="closeSkinPreviewModal(event)">
-    <div class="skin-detail-modal-card" id="skin-detail-card" onclick="event.stopPropagation()">
-      <button class="modal-close-x" onclick="closeSkinPreviewModal()">✕</button>
-      <div class="skin-detail-top">
-        <span id="detail-wear-badge" class="wear-badge">FN</span>
-        <span id="detail-rarity-badge" class="rarity-label-top">РЕДКОСТЬ</span>
+  <!-- МОДАЛКА ВЫИГРЫША -->
+  <div id="win-modal" class="modal hidden" onclick="if(event.target===this)closeWinModal()">
+    <div class="modal-content">
+      <h3 id="win-modal-title">Тебе выпало!</h3>
+      <div id="win-card-container" class="win-cards-stage"></div>
+      <div class="modal-actions">
+        <button id="sell-won-btn" class="secondary-btn" onclick="sellWonCard()">Продать</button>
+        <button class="primary-btn" onclick="closeWinModal()">Забрать в инвентарь</button>
       </div>
-      <div class="skin-detail-stage">
-        <img id="skin-preview-only-img" src="" alt="Skin" draggable="false">
-      </div>
-      <div class="skin-detail-info">
-        <div id="detail-weapon-text" class="skin-weapon-line">Оружие</div>
-        <h3 id="detail-skin-title" class="detail-title">Название скина</h3>
-        <div class="detail-specs-grid">
-          <div class="detail-spec-item">
-            <span>Цена</span>
-            <b id="detail-price-val" class="skin-price-val">0 ₽</b>
-          </div>
-          <div class="detail-spec-item">
-            <span>Качество / Износ</span>
-            <b id="detail-wear-label">Factory New</b>
-          </div>
-          <div class="detail-spec-item">
-            <span>Версия</span>
-            <b id="detail-edition-label">Обычный</b>
-          </div>
-          <div class="detail-spec-item">
-            <span>Редкость</span>
-            <b id="detail-rarity-label">—</b>
+    </div>
+  </div>
+
+  <!-- 3D МОДАЛКА СКИНА -->
+  <div id="card-3d-modal" class="modal hidden" onclick="closeCard3DModal(event)">
+    <div class="modal-3d-dialog">
+      <button class="modal-close-x" onclick="closeCard3DModal()">✕</button>
+      <div id="stage-3d" class="stage-3d">
+        <div id="card-3d-flipper" class="card-3d-flipper">
+          <div id="card-3d-front" class="card-3d-front"></div>
+          <div class="card-3d-back">
+            <div class="back-brand">CS<span>LUDKA</span></div>
+            <small>Покрути скин мышью или пальцем</small>
           </div>
         </div>
       </div>
-      <div id="detail-modal-actions" class="modal-actions"></div>
-    </div>
-  </div>
-
-  <!-- МОДАЛКА СТАРТОВОГО БАЛАНСА -->
-  <div id="start-balance-modal" class="modal hidden">
-    <div class="modal-content" style="max-width:420px;">
-      <h2>Выбери стартовый баланс</h2>
-      <p class="hint-text" style="margin:8px 0 14px;">От 1 ₽ до 1500 ₽</p>
-      <div style="font-size:28px;font-weight:900;color:#4ade80;margin-bottom:12px;"><span id="start-balance-display">1500</span> ₽</div>
-      <input type="range" id="start-balance-range" min="1" max="1500" value="1500" style="width:100%;" oninput="syncStartBalanceFromRange(this.value)">
-      <div style="margin-top:12px;">
-        <input type="number" id="start-balance-input" class="nick-input" min="1" max="1500" value="1500" oninput="syncStartBalanceFromInput(this.value)">
-      </div>
-      <div class="modal-actions">
-        <button class="primary-btn big-btn" onclick="confirmStartBalance()">Начать игру</button>
-      </div>
+      <div id="card-3d-info" class="card-3d-info"></div>
     </div>
   </div>
 
