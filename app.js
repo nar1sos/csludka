@@ -3,7 +3,6 @@ const SHARED_CLOUD_CONFIG = {
   apiKey: '$2a$10$uCgH40cdceLb9NZh7JtgyOcaiU1.fdgpinEa09JSQcj2V.ZYDPOfG'
 };
 
-const PACK_PRICE = 1000;
 const INITIAL_BALANCE = 1500;
 const MIN_START_BALANCE = 1;
 const MAX_START_BALANCE = 1500;
@@ -67,7 +66,7 @@ const SoundFX = (() => {
       ensureCtx();
     },
     click() { tone({ freq: 620, endFreq: 780, type: 'sine', duration: 0.045, gain: 0.12 }); },
-    cardPass(stepIndex = 0) {
+    skinPass(stepIndex = 0) {
       const shift = Math.min(200, (stepIndex % 10) * 18);
       tone({ freq: 860 + shift, endFreq: 290, type: 'triangle', duration: 0.05, gain: 0.25 });
     },
@@ -80,7 +79,6 @@ const SoundFX = (() => {
       tone({ freq: 880, endFreq: 1174.66, type: 'sine', duration: 0.09, gain: 0.18, delay: 0 });
       tone({ freq: 1174.66, endFreq: 1318.5, type: 'sine', duration: 0.12, gain: 0.18, delay: 0.07 });
     },
-    packOpen() { [330, 440, 554.37, 659.25].forEach((f, i) => tone({ freq: f, type: 'sawtooth', duration: 0.11, gain: 0.1, delay: i * 0.06 })); },
     upgradeSuccess() { [440, 554.37, 659.25, 880].forEach((f, i) => tone({ freq: f, type: 'triangle', duration: 0.2, gain: 0.22, delay: i * 0.08 })); },
     upgradeFail() { tone({ freq: 260, endFreq: 130, type: 'sawtooth', duration: 0.28, gain: 0.2 }); },
     trade() { tone({ freq: 587.33, type: 'triangle', duration: 0.12, gain: 0.2 }); tone({ freq: 880, type: 'triangle', duration: 0.18, gain: 0.2, delay: 0.1 }); }
@@ -119,7 +117,7 @@ let state = {
   stats: JSON.parse(localStorage.getItem('cs_stats') || '{"opened":0,"upgrades":0}'),
   rarities: localStorage.getItem('cs_rarities') ? JSON.parse(localStorage.getItem('cs_rarities')) : JSON.parse(JSON.stringify(DEFAULT_RARITIES)),
   wears: localStorage.getItem('cs_wears') ? JSON.parse(localStorage.getItem('cs_wears')) : JSON.parse(JSON.stringify(DEFAULT_WEARS)),
-  cards: localStorage.getItem('cs_cards') ? JSON.parse(localStorage.getItem('cs_cards')) : JSON.parse(JSON.stringify(DEFAULT_CARDS)),
+  skins: localStorage.getItem('cs_cards') ? JSON.parse(localStorage.getItem('cs_cards')) : JSON.parse(JSON.stringify(DEFAULT_CARDS)),
   cases: localStorage.getItem('cs_cases') ? JSON.parse(localStorage.getItem('cs_cases')) : JSON.parse(JSON.stringify(DEFAULT_CASES)),
   caseCategories: localStorage.getItem('cs_case_categories') ? JSON.parse(localStorage.getItem('cs_case_categories')) : JSON.parse(JSON.stringify(DEFAULT_CASE_CATEGORIES)),
   cloud: getEffectiveCloudConfig(),
@@ -136,13 +134,12 @@ let currentCaseId = null;
 let caseOpenCount = 1;
 let isSpinning = false;
 let isUpgrading = false;
-let isOpeningPack = false;
 let isDuelRunning = false;
 let duelBotCount = 1;
 let duelCompetitors = [];
 let rouletteSoundRafId = null;
 let lastWonItems = [];
-let editingCardId = null;
+let editingSkinId = null;
 let editingCaseId = null;
 let hasLocalCatalogEdits = localStorage.getItem('cs_dirty_catalog') === '1';
 let cloudSyncInProgress = false;
@@ -157,32 +154,24 @@ let tradeMyOfferUids = [];
 let tradeBotOffer = [];
 let craftSelectedUids = [];
 
-let rotX = 0, rotY = 0, isDragging3D = false, dragStartX = 0, dragStartY = 0;
 let rarityMapCache = new Map();
-let cardMapCache = new Map();
+let skinMapCache = new Map();
 let wearMapCache = new Map();
 
 function rebuildLookupCaches() {
   rarityMapCache = new Map(state.rarities.map(r => [r.id, r]));
-  cardMapCache = new Map(state.cards.map(c => [c.id, c]));
+  skinMapCache = new Map(state.skins.map(s => [s.id, s]));
   wearMapCache = new Map(state.wears.map(w => [w.code, w]));
 }
 
 function getRarityObj(id) { return rarityMapCache.get(id) || state.rarities[state.rarities.length - 1] || state.rarities[0]; }
-function getCardById(id) { return cardMapCache.get(id); }
+function getSkinById(id) { return skinMapCache.get(id); }
 function getWearObj(code) { return wearMapCache.get(code) || state.wears[0] || { code: 'FN', label: 'Factory New', priceMult: 1, weight: 100 }; }
 
 function getRarityGradientColors(rar) {
   if (!rar) return ['#4b69ff', '#14161c'];
   if (Array.isArray(rar.gradientColors) && rar.gradientColors.length > 0) return rar.gradientColors.slice(0, 5);
   return [rar.color || '#4b69ff', rar.bg || '#14161c'];
-}
-
-function buildRarityGradientCSS(rar) {
-  const colors = getRarityGradientColors(rar);
-  if (colors.length === 1) return `linear-gradient(155deg, ${colors[0]} 0%, ${colors[0]} 100%)`;
-  const stops = colors.map((col, idx) => `${col} ${Math.round((idx / (colors.length - 1)) * 100)}%`);
-  return `linear-gradient(155deg, ${stops.join(', ')})`;
 }
 
 function sanitizeChanceInput(rawVal) {
@@ -198,7 +187,6 @@ function recalculateRarityHierarchy() {
   const total = state.rarities.length;
   state.rarities.forEach((r, idx) => {
     r.weight = sanitizeChanceInput(r.weight);
-    r.packWeight = r.packWeight !== undefined ? sanitizeChanceInput(r.packWeight) : r.weight;
     r.order = total - idx;
     const gColors = getRarityGradientColors(r);
     r.color = gColors[0];
@@ -206,9 +194,6 @@ function recalculateRarityHierarchy() {
   });
   if (state.rarities.reduce((s, r) => s + r.weight, 0) <= 0) {
     state.rarities[state.rarities.length - 1].weight = 100;
-  }
-  if (state.rarities.reduce((s, r) => s + r.packWeight, 0) <= 0) {
-    state.rarities[state.rarities.length - 1].packWeight = 100;
   }
   rebuildLookupCaches();
 }
@@ -239,7 +224,7 @@ function saveState(markCatalogDirty = false) {
   localStorage.setItem('cs_stats', JSON.stringify(state.stats));
   localStorage.setItem('cs_rarities', JSON.stringify(state.rarities));
   localStorage.setItem('cs_wears', JSON.stringify(state.wears));
-  localStorage.setItem('cs_cards', JSON.stringify(state.cards));
+  localStorage.setItem('cs_cards', JSON.stringify(state.skins));
   localStorage.setItem('cs_cases', JSON.stringify(state.cases));
   localStorage.setItem('cs_case_categories', JSON.stringify(state.caseCategories));
   localStorage.setItem('cs_st_mult', String(state.statTrakMultiplier));
@@ -302,10 +287,10 @@ function rollWearCode() {
   return pool[pool.length - 1].code;
 }
 
-function rollEditionForSkin(card) {
-  if (!card) return 'normal';
-  const canSouv = Boolean(card.hasSouvenir);
-  const canSt = Boolean(card.hasStatTrak);
+function rollEditionForSkin(skin) {
+  if (!skin) return 'normal';
+  const canSouv = Boolean(skin.hasSouvenir);
+  const canSt = Boolean(skin.hasStatTrak);
 
   if (canSouv && canSt) {
     const roll = Math.random();
@@ -318,9 +303,9 @@ function rollEditionForSkin(card) {
   return 'normal';
 }
 
-function getSkinPrice(card, edition = 'normal', wearCode = 'FN') {
-  if (!card) return 0;
-  const base = Number(card.price || 0);
+function getSkinPrice(skin, edition = 'normal', wearCode = 'FN') {
+  if (!skin) return 0;
+  const base = Number(skin.price || 0);
   const wearMult = Number(getWearObj(wearCode)?.priceMult ?? 1);
   let edMult = 1;
   if (edition === 'stattrak') edMult = Number(state.statTrakMultiplier) || 1.8;
@@ -328,21 +313,21 @@ function getSkinPrice(card, edition = 'normal', wearCode = 'FN') {
   return Math.max(1, Math.round(base * wearMult * edMult));
 }
 
-function formatSkinTitle(card) {
-  const w = (card.weapon || '').trim();
-  const n = (card.name || '').trim();
+function formatSkinTitle(skin) {
+  const w = (skin.weapon || '').trim();
+  const n = (skin.name || '').trim();
   if (w && n) return `${w} | ${n}`;
   return n || w || 'Skin';
 }
 
 function sortItems(items, sortMode) {
   return [...items].sort((a, b) => {
-    const cardA = a.card || a;
-    const cardB = b.card || b;
-    const priceA = getSkinPrice(cardA, a.edition || 'normal', a.wear || 'FN');
-    const priceB = getSkinPrice(cardB, b.edition || 'normal', b.wear || 'FN');
-    const rarA = Number(getRarityObj(cardA.rarity)?.order || 0);
-    const rarB = Number(getRarityObj(cardB.rarity)?.order || 0);
+    const skinA = a.skin || a;
+    const skinB = b.skin || b;
+    const priceA = getSkinPrice(skinA, a.edition || 'normal', a.wear || 'FN');
+    const priceB = getSkinPrice(skinB, b.edition || 'normal', b.wear || 'FN');
+    const rarA = Number(getRarityObj(skinA.rarity)?.order || 0);
+    const rarB = Number(getRarityObj(skinB.rarity)?.order || 0);
 
     if (sortMode === 'price-desc') return priceB - priceA;
     if (sortMode === 'price-asc') return priceA - priceB;
@@ -352,32 +337,32 @@ function sortItems(items, sortMode) {
   });
 }
 
-function createCardHTML(card, edition = 'normal', wearCode = 'FN', extraClass = '', clickAttr = '', actionBtnHTML = '', wrapAttr = '') {
-  const rar = getRarityObj(card.rarity);
-  const price = getSkinPrice(card, edition, wearCode);
-  const effectClass = rar.effect && rar.effect !== 'none' ? `effect-${rar.effect}` : '';
+function createSkinTileHTML(skin, edition = 'normal', wearCode = 'FN', extraClass = '', clickAttr = '', actionBtnHTML = '') {
+  const rar = getRarityObj(skin.rarity);
+  const price = getSkinPrice(skin, edition, wearCode);
   const edClass = edition === 'souvenir' ? 'is-souvenir' : edition === 'stattrak' ? 'is-stattrak' : '';
-  const gradCSS = buildRarityGradientCSS(rar);
 
   const badges = [];
   if (edition === 'stattrak') badges.push('<span class="st-pill">ST™</span>');
   if (edition === 'souvenir') badges.push('<span class="souv-pill">★ SOUVENIR</span>');
 
   return `
-    <div class="card-wrap" ${wrapAttr}>
-      <div class="gd-card ${edClass} ${effectClass} ${extraClass}"
-           style="--rar-color: ${rar.color}; --rar-bg: ${rar.bg}; --rar-gradient: ${gradCSS};"
+    <div class="skin-wrap">
+      <div class="cs-skin-tile ${edClass} ${extraClass}"
+           style="--rar-color: ${rar.color};"
            ${clickAttr}>
-        <div class="card-top-row">
+        <div class="skin-top-row">
           <span class="wear-tag">${wearCode}</span>
-          <span class="card-rarity-badge">${rar.name}</span>
+          <span class="skin-rarity-dot">${rar.name}</span>
         </div>
-        <img class="card-thumb" loading="lazy" decoding="async" draggable="false" src="${card.img}" alt="${formatSkinTitle(card)}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'">
-        <div class="skin-weapon">${card.weapon || 'Weapon'}</div>
-        <div class="card-title">${card.name}</div>
-        <div class="card-bottom-area">
-          <span class="card-price">${price} ₽</span>
-          <div class="edition-badges">${badges.join('')}</div>
+        <img class="skin-thumb" loading="lazy" decoding="async" draggable="false" src="${skin.img}" alt="${formatSkinTitle(skin)}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'">
+        <div class="skin-info-block">
+          <div class="skin-weapon">${skin.weapon || 'Weapon'}</div>
+          <div class="skin-title">${skin.name}</div>
+        </div>
+        <div class="skin-bottom-area">
+          <span class="skin-price">${price} ₽</span>
+          <div>${badges.join('')}</div>
         </div>
       </div>
       ${actionBtnHTML}
@@ -385,25 +370,23 @@ function createCardHTML(card, edition = 'normal', wearCode = 'FN', extraClass = 
   `;
 }
 
-function createUpgradeSquareTileHTML(card, edition = 'normal', wearCode = 'FN', isSelected = false, clickAttr = '', extraAttr = '') {
-  const rar = getRarityObj(card.rarity);
-  const price = getSkinPrice(card, edition, wearCode);
-  const gradCSS = buildRarityGradientCSS(rar);
+function createUpgradeSquareTileHTML(skin, edition = 'normal', wearCode = 'FN', isSelected = false, clickAttr = '', extraAttr = '') {
+  const rar = getRarityObj(skin.rarity);
+  const price = getSkinPrice(skin, edition, wearCode);
   const selClass = isSelected ? 'selected' : '';
   const edTag = edition === 'souvenir' ? 'SOUV ' : edition === 'stattrak' ? 'ST ' : '';
 
   return `
     <div class="upg-square-tile ${selClass}"
-         style="--rar-color: ${rar.color}; --rar-bg: ${rar.bg}; --rar-gradient: ${gradCSS};"
+         style="--rar-color: ${rar.color};"
          ${extraAttr}
          ${clickAttr}>
       <div class="upg-tile-top">
         <span class="upg-tile-price">${price} ₽</span>
         <span class="wear-tag" style="font-size:9px;padding:1px 4px;">${edTag}${wearCode}</span>
       </div>
-      <img class="upg-tile-img" loading="lazy" decoding="async" draggable="false" src="${card.img}" alt="${formatSkinTitle(card)}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS'">
-      <div class="upg-tile-name">${formatSkinTitle(card)}</div>
-      <div class="upg-plus-overlay"><span class="upg-plus-box">+</span></div>
+      <img class="upg-tile-img" loading="lazy" decoding="async" draggable="false" src="${skin.img}" alt="${formatSkinTitle(skin)}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS'">
+      <div class="upg-tile-name">${formatSkinTitle(skin)}</div>
     </div>
   `;
 }
@@ -411,7 +394,7 @@ function createUpgradeSquareTileHTML(card, edition = 'normal', wearCode = 'FN', 
 function appendEmptyUpgradeSlots(container, itemCount, minRows = 3) {
   if (!container) return;
   const width = container.getBoundingClientRect().width;
-  const cols = width ? Math.max(2, Math.floor((width + 10) / 122)) : 4;
+  const cols = width ? Math.max(2, Math.floor((width + 8) / 120)) : 4;
   const totalSlots = Math.max(minRows, Math.ceil(itemCount / cols)) * cols;
   const emptyCount = Math.max(0, totalSlots - itemCount);
   for (let i = 0; i < emptyCount; i++) {
@@ -421,10 +404,10 @@ function appendEmptyUpgradeSlots(container, itemCount, minRows = 3) {
   }
 }
 
-function giveSkinToPlayer(card, edition = 'normal', wearCode = 'FN') {
+function giveSkinToPlayer(skin, edition = 'normal', wearCode = 'FN') {
   const item = {
     uid: 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-    cardId: card.id,
+    cardId: skin.id,
     edition,
     wear: wearCode
   };
@@ -480,7 +463,7 @@ async function pushCatalogToCloud() {
     try { current = await readCloudRecord(); } catch (_) { current = {}; }
 
     current.csCatalog = {
-      cards: state.cards,
+      cards: state.skins,
       rarities: state.rarities,
       wears: state.wears,
       cases: state.cases,
@@ -518,7 +501,7 @@ async function syncCatalogFromCloud(forceOverwriteLocal = false) {
     const cat = record && record.csCatalog;
     if (!cat || typeof cat !== 'object') return;
 
-    if (Array.isArray(cat.cards) && cat.cards.length > 0) state.cards = cat.cards;
+    if (Array.isArray(cat.cards) && cat.cards.length > 0) state.skins = cat.cards;
     if (Array.isArray(cat.rarities) && cat.rarities.length > 0) state.rarities = cat.rarities;
     if (Array.isArray(cat.wears) && cat.wears.length > 0) state.wears = cat.wears;
     if (Array.isArray(cat.caseCategories) && cat.caseCategories.length > 0) state.caseCategories = cat.caseCategories;
@@ -600,38 +583,29 @@ function updateCaseOpenCostLabel() {
   document.getElementById('active-case-total-price').textContent = c.price * caseOpenCount;
 }
 
-function applyRouletteGridLayout(container, count) {
-  if (!container) return;
-  container.classList.toggle('is-multi', count > 1);
-  container.classList.toggle('cols-3', count === 3 || count === 5 || count === 6);
-  container.classList.toggle('cols-4', count === 7 || count === 8);
-  container.classList.toggle('cols-5', count >= 9);
-}
-
 function buildMultiRouletteTracks(caseObj, winners = null) {
   const container = document.getElementById('roulettes-multi-container');
   if (!container || !caseObj) return;
-  applyRouletteGridLayout(container, caseOpenCount);
 
-  const pool = caseObj.cardIds.map(getCardById).filter(Boolean);
+  const pool = caseObj.cardIds.map(getSkinById).filter(Boolean);
   if (pool.length === 0) { container.innerHTML = ''; return; }
 
   let html = '';
   for (let row = 0; row < caseOpenCount; row++) {
     const win = winners && winners[row] ? winners[row] : null;
-    let cardsHtml = '';
+    let skinsHtml = '';
     for (let i = 0; i < 45; i++) {
       if (i === 38 && win) {
-        cardsHtml += createCardHTML(win.card, win.edition, win.wear);
+        skinsHtml += createSkinTileHTML(win.skin, win.edition, win.wear);
       } else {
         const rnd = pool[Math.floor(Math.random() * pool.length)];
-        cardsHtml += createCardHTML(rnd, rollEditionForSkin(rnd), rollWearCode());
+        skinsHtml += createSkinTileHTML(rnd, rollEditionForSkin(rnd), rollWearCode());
       }
     }
     html += `
       <div class="roulette-wrapper">
         <div class="roulette-pointer"></div>
-        <div id="roulette-track-${row}" class="roulette-track">${cardsHtml}</div>
+        <div id="roulette-track-${row}" class="roulette-track">${skinsHtml}</div>
       </div>
     `;
   }
@@ -666,37 +640,37 @@ function renderCaseContents() {
   const c = state.cases.find(x => x.id === currentCaseId);
   if (!c) return;
   const sortMode = document.getElementById('case-contents-sort').value;
-  const cards = c.cardIds.map(getCardById).filter(Boolean);
-  document.getElementById('case-contents-grid').innerHTML = sortItems(cards, sortMode).map(card => createCardHTML(card, 'normal', 'FN')).join('');
+  const skins = c.cardIds.map(getSkinById).filter(Boolean);
+  document.getElementById('case-contents-grid').innerHTML = sortItems(skins, sortMode).map(skin => createSkinTileHTML(skin, 'normal', 'FN')).join('');
 }
 
-function rollWeightedSkin(poolCards, mode = 'case') {
+function rollWeightedSkin(poolSkins) {
   let totalW = 0;
-  const weighted = poolCards.map(card => {
-    const rar = getRarityObj(card.rarity);
-    const w = sanitizeChanceInput(mode === 'pack' ? (rar?.packWeight ?? rar?.weight) : rar?.weight);
+  const weighted = poolSkins.map(skin => {
+    const rar = getRarityObj(skin.rarity);
+    const w = sanitizeChanceInput(rar?.weight);
     totalW += w;
-    return { card, w };
+    return { skin, w };
   });
-  if (totalW <= 0) return poolCards[Math.floor(Math.random() * poolCards.length)];
+  if (totalW <= 0) return poolSkins[Math.floor(Math.random() * poolSkins.length)];
   let r = Math.random() * totalW;
   for (const item of weighted) {
-    if (r < item.w) return item.card;
+    if (r < item.w) return item.skin;
     r -= item.w;
   }
-  return poolCards[poolCards.length - 1];
+  return poolSkins[poolSkins.length - 1];
 }
 
 function getRouletteStepWidth() {
-  const firstCard = document.querySelector('.roulette-track .card-wrap');
-  const trackEl = firstCard ? firstCard.parentElement : null;
-  const cardW = firstCard ? firstCard.getBoundingClientRect().width : 185;
+  const firstTile = document.querySelector('.roulette-track .skin-wrap');
+  const trackEl = firstTile ? firstTile.parentElement : null;
+  const tileW = firstTile ? firstTile.getBoundingClientRect().width : 185;
   let gapW = 12;
   if (trackEl) {
     const g = parseFloat(getComputedStyle(trackEl).columnGap || getComputedStyle(trackEl).gap);
     if (Number.isFinite(g) && g >= 0) gapW = g;
   }
-  return { cardW, stepW: cardW + gapW };
+  return { tileW, stepW: tileW + gapW };
 }
 
 function setCaseControlsDisabled(disabled) {
@@ -705,17 +679,17 @@ function setCaseControlsDisabled(disabled) {
   document.querySelectorAll('#case-count-selector .count-chip').forEach(btn => { btn.disabled = disabled; });
 }
 
-function stopRouletteCardSoundTracker() {
+function stopRouletteSkinSoundTracker() {
   if (rouletteSoundRafId !== null) { cancelAnimationFrame(rouletteSoundRafId); rouletteSoundRafId = null; }
 }
 
-function trackRouletteCardsPassingPointer(durationSec, isActiveCheck = () => isSpinning, trackId = 'roulette-track-0') {
-  stopRouletteCardSoundTracker();
+function trackRouletteSkinsPassingPointer(durationSec, isActiveCheck = () => isSpinning, trackId = 'roulette-track-0') {
+  stopRouletteSkinSoundTracker();
   const track = document.getElementById(trackId);
   const pointer = track?.parentElement?.querySelector('.roulette-pointer');
   if (!track || !pointer) return;
-  const cards = Array.from(track.querySelectorAll('.card-wrap'));
-  if (!cards.length) return;
+  const items = Array.from(track.querySelectorAll('.skin-wrap'));
+  if (!items.length) return;
 
   const startTime = performance.now();
   const durationMs = durationSec * 1000;
@@ -723,11 +697,11 @@ function trackRouletteCardsPassingPointer(durationSec, isActiveCheck = () => isS
 
   function check() {
     const px = pointer.getBoundingClientRect().left;
-    for (let i = 0; i < cards.length; i++) {
-      const rect = cards[i].getBoundingClientRect();
+    for (let i = 0; i < items.length; i++) {
+      const rect = items[i].getBoundingClientRect();
       if (rect.left + rect.width * 0.5 <= px && i > lastIdx) {
         lastIdx = i;
-        SoundFX.cardPass(i);
+        SoundFX.skinPass(i);
       }
     }
   }
@@ -735,7 +709,7 @@ function trackRouletteCardsPassingPointer(durationSec, isActiveCheck = () => isS
   function frame(now) {
     check();
     if (now - startTime < durationMs + 60 && isActiveCheck()) rouletteSoundRafId = requestAnimationFrame(frame);
-    else { check(); stopRouletteCardSoundTracker(); }
+    else { check(); stopRouletteSkinSoundTracker(); }
   }
   rouletteSoundRafId = requestAnimationFrame(frame);
 }
@@ -748,7 +722,7 @@ function spinCurrentCase(fast = false) {
   const totalCost = c.price * count;
   if (state.balance < totalCost) return;
 
-  const pool = c.cardIds.map(getCardById).filter(Boolean);
+  const pool = c.cardIds.map(getSkinById).filter(Boolean);
   if (!pool.length) return;
 
   state.balance -= totalCost;
@@ -757,80 +731,40 @@ function spinCurrentCase(fast = false) {
 
   const winners = [];
   for (let i = 0; i < count; i++) {
-    const card = rollWeightedSkin(pool, 'case');
-    winners.push({ card, edition: rollEditionForSkin(card), wear: rollWearCode() });
+    const skin = rollWeightedSkin(pool);
+    winners.push({ skin, edition: rollEditionForSkin(skin), wear: rollWearCode() });
   }
 
   buildMultiRouletteTracks(c, winners);
   isSpinning = true;
   setCaseControlsDisabled(true);
 
-  const { cardW, stepW } = getRouletteStepWidth();
+  const { tileW, stepW } = getRouletteStepWidth();
   const durationSec = fast ? 0.85 : 4.2;
 
   setTimeout(() => {
     for (let row = 0; row < count; row++) {
       const track = document.getElementById(`roulette-track-${row}`);
       if (!track) continue;
-      const jitter = Math.random() * Math.min(24, cardW * 0.16) - Math.min(12, cardW * 0.08);
-      const offset = 38 * stepW + jitter + cardW / 2;
+      const jitter = Math.random() * Math.min(24, tileW * 0.16) - Math.min(12, tileW * 0.08);
+      const offset = 38 * stepW + jitter + tileW / 2;
       track.style.transition = `transform ${durationSec}s cubic-bezier(0.12, 0.88, 0.22, 1)`;
       track.style.transform = `translateX(-${offset}px)`;
     }
-    trackRouletteCardsPassingPointer(durationSec, () => isSpinning, 'roulette-track-0');
+    trackRouletteSkinsPassingPointer(durationSec, () => isSpinning, 'roulette-track-0');
   }, 30);
 
   setTimeout(() => {
-    stopRouletteCardSoundTracker();
+    stopRouletteSkinSoundTracker();
     isSpinning = false;
     setCaseControlsDisabled(false);
     const addedEntries = winners.map(w => {
-      const added = giveSkinToPlayer(w.card, w.edition, w.wear);
+      const added = giveSkinToPlayer(w.skin, w.edition, w.wear);
       return { ...w, uid: added.uid };
     });
     SoundFX.win(addedEntries.some(e => e.edition !== 'normal'));
     showWinModal(addedEntries);
   }, fast ? 950 : 4350);
-}
-
-// === ПАКИ ===
-function buyPack() {
-  if (isOpeningPack || state.balance < PACK_PRICE) return;
-  isOpeningPack = true;
-  SoundFX.packOpen();
-  document.getElementById('buy-pack-btn').disabled = true;
-  state.balance -= PACK_PRICE;
-  state.stats.opened += 1;
-  saveState(false);
-
-  const revealArea = document.getElementById('pack-reveal-area');
-  revealArea.innerHTML = '';
-
-  const pulled = [];
-  for (let i = 0; i < 5; i++) {
-    const card = rollWeightedSkin(state.cards, 'pack');
-    const edition = rollEditionForSkin(card);
-    const wear = rollWearCode();
-    giveSkinToPlayer(card, edition, wear);
-    pulled.push({ card, edition, wear });
-  }
-
-  pulled.forEach((entry, idx) => {
-    setTimeout(() => {
-      SoundFX.tick(idx + 2);
-      const d = document.createElement('div');
-      d.innerHTML = createCardHTML(entry.card, entry.edition, entry.wear);
-      if (d.firstElementChild) {
-        d.firstElementChild.classList.add('pack-reveal-anim');
-        revealArea.appendChild(d.firstElementChild);
-      }
-      if (idx === pulled.length - 1) {
-        SoundFX.win(pulled.some(p => p.edition !== 'normal'));
-        isOpeningPack = false;
-        document.getElementById('buy-pack-btn').disabled = false;
-      }
-    }, idx * 140);
-  });
 }
 
 // === АПГРЕЙД ===
@@ -854,7 +788,7 @@ function renderUpgradeUI() {
 
 function renderUpgradeMyInventory() {
   const sortMode = document.getElementById('upg-inv-sort').value;
-  const mapped = state.inventory.map(item => ({ ...item, card: getCardById(item.cardId) })).filter(x => x.card);
+  const mapped = state.inventory.map(item => ({ ...item, skin: getSkinById(item.cardId) })).filter(x => x.skin);
   const sorted = sortItems(mapped, sortMode);
 
   const grid = document.getElementById('upgrade-my-cards');
@@ -862,7 +796,7 @@ function renderUpgradeMyInventory() {
   sorted.forEach(item => {
     const d = document.createElement('div');
     d.innerHTML = createUpgradeSquareTileHTML(
-      item.card,
+      item.skin,
       item.edition || 'normal',
       item.wear || 'FN',
       item.uid === upgSelectedSourceUid,
@@ -887,16 +821,16 @@ function renderUpgradeTargets() {
   if (edFilter === 'all' || edFilter === 'souvenir') editions.push('souvenir');
 
   let targets = [];
-  state.cards.forEach(card => {
+  state.skins.forEach(skin => {
     editions.forEach(ed => {
-      if (ed === 'stattrak' && !card.hasStatTrak) return;
-      if (ed === 'souvenir' && !card.hasSouvenir) return;
-      targets.push({ card, edition: ed, wear: wearCode });
+      if (ed === 'stattrak' && !skin.hasStatTrak) return;
+      if (ed === 'souvenir' && !skin.hasSouvenir) return;
+      targets.push({ skin, edition: ed, wear: wearCode });
     });
   });
 
   if (searchQ) {
-    targets = targets.filter(t => formatSkinTitle(t.card).toLowerCase().includes(searchQ));
+    targets = targets.filter(t => formatSkinTitle(t.skin).toLowerCase().includes(searchQ));
   }
 
   const sorted = sortItems(targets, sortMode);
@@ -905,15 +839,15 @@ function renderUpgradeTargets() {
   const grid = document.getElementById('upgrade-target-cards');
   grid.innerHTML = '';
   sorted.forEach(t => {
-    const sel = t.card.id === upgSelectedTargetId && t.edition === upgSelectedTargetEdition && t.wear === upgSelectedTargetWear;
+    const sel = t.skin.id === upgSelectedTargetId && t.edition === upgSelectedTargetEdition && t.wear === upgSelectedTargetWear;
     const d = document.createElement('div');
     d.innerHTML = createUpgradeSquareTileHTML(
-      t.card,
+      t.skin,
       t.edition,
       t.wear,
       sel,
-      `onclick="selectUpgradeTarget('${t.card.id}', '${t.edition}', '${t.wear}')"`,
-      `data-upg-target="${t.card.id}_${t.edition}_${t.wear}"`
+      `onclick="selectUpgradeTarget('${t.skin.id}', '${t.edition}', '${t.wear}')"`,
+      `data-upg-target="${t.skin.id}_${t.edition}_${t.wear}"`
     );
     if (d.firstElementChild) grid.appendChild(d.firstElementChild);
   });
@@ -928,13 +862,13 @@ function selectUpgradeSource(uid) {
   updateUpgradeSlotsAndChance();
 }
 
-function selectUpgradeTarget(cardId, edition, wear) {
+function selectUpgradeTarget(skinId, edition, wear) {
   if (isUpgrading) return;
   SoundFX.click();
-  upgSelectedTargetId = cardId;
+  upgSelectedTargetId = skinId;
   upgSelectedTargetEdition = edition;
   upgSelectedTargetWear = wear;
-  const key = `${cardId}_${edition}_${wear}`;
+  const key = `${skinId}_${edition}_${wear}`;
   document.querySelectorAll('#upgrade-target-cards .upg-square-tile').forEach(el => el.classList.toggle('selected', el.dataset.upgTarget === key));
   updateUpgradeSlotsAndChance();
 }
@@ -947,15 +881,15 @@ function updateUpgradeSlotsAndChance() {
   const circle = document.getElementById('upgrade-circle');
 
   const srcItem = state.inventory.find(x => x.uid === upgSelectedSourceUid);
-  const srcCard = srcItem ? getCardById(srcItem.cardId) : null;
-  const tgtCard = upgSelectedTargetId ? getCardById(upgSelectedTargetId) : null;
+  const srcSkin = srcItem ? getSkinById(srcItem.cardId) : null;
+  const tgtSkin = upgSelectedTargetId ? getSkinById(upgSelectedTargetId) : null;
 
-  srcSlot.innerHTML = srcCard ? createCardHTML(srcCard, srcItem.edition || 'normal', srcItem.wear || 'FN') : 'Выбери скин снизу';
-  tgtSlot.innerHTML = tgtCard ? createCardHTML(tgtCard, upgSelectedTargetEdition, upgSelectedTargetWear) : 'Выбери цель справа';
+  srcSlot.innerHTML = srcSkin ? createSkinTileHTML(srcSkin, srcItem.edition || 'normal', srcItem.wear || 'FN') : 'Выбери скин снизу';
+  tgtSlot.innerHTML = tgtSkin ? createSkinTileHTML(tgtSkin, upgSelectedTargetEdition, upgSelectedTargetWear) : 'Выбери цель справа';
 
-  if (srcCard && tgtCard) {
-    const sPrice = getSkinPrice(srcCard, srcItem.edition || 'normal', srcItem.wear || 'FN');
-    const tPrice = getSkinPrice(tgtCard, upgSelectedTargetEdition, upgSelectedTargetWear);
+  if (srcSkin && tgtSkin) {
+    const sPrice = getSkinPrice(srcSkin, srcItem.edition || 'normal', srcItem.wear || 'FN');
+    const tPrice = getSkinPrice(tgtSkin, upgSelectedTargetEdition, upgSelectedTargetWear);
     const chance = calculateUpgradeChance(sPrice, tPrice);
     chanceText.textContent = formatUpgradeChanceText(chance);
     const deg = (chance / 100) * 360;
@@ -973,13 +907,13 @@ function executeUpgrade() {
   const srcIdx = state.inventory.findIndex(x => x.uid === upgSelectedSourceUid);
   if (srcIdx === -1) return;
   const srcItem = state.inventory[srcIdx];
-  const srcCard = getCardById(srcItem.cardId);
-  const tgtCard = getCardById(upgSelectedTargetId);
-  if (!srcCard || !tgtCard) return;
+  const srcSkin = getSkinById(srcItem.cardId);
+  const tgtSkin = getSkinById(upgSelectedTargetId);
+  if (!srcSkin || !tgtSkin) return;
 
   const chance = calculateUpgradeChance(
-    getSkinPrice(srcCard, srcItem.edition || 'normal', srcItem.wear || 'FN'),
-    getSkinPrice(tgtCard, upgSelectedTargetEdition, upgSelectedTargetWear)
+    getSkinPrice(srcSkin, srcItem.edition || 'normal', srcItem.wear || 'FN'),
+    getSkinPrice(tgtSkin, upgSelectedTargetEdition, upgSelectedTargetWear)
   );
 
   const speedMode = document.getElementById('upgrade-speed-select')?.value || 'normal';
@@ -1005,8 +939,8 @@ function executeUpgrade() {
     if (chance > 0 && roll < chance) {
       SoundFX.upgradeSuccess();
       state.stats.upgrades += 1;
-      giveSkinToPlayer(tgtCard, upgSelectedTargetEdition, upgSelectedTargetWear);
-      msg.innerHTML = `<span style="color:#4ade80;font-weight:800;">УСПЕХ! Выпал ${formatSkinTitle(tgtCard)}</span>`;
+      giveSkinToPlayer(tgtSkin, upgSelectedTargetEdition, upgSelectedTargetWear);
+      msg.innerHTML = `<span style="color:#4ade80;font-weight:800;">УСПЕХ! Выпал ${formatSkinTitle(tgtSkin)}</span>`;
     } else {
       SoundFX.upgradeFail();
       msg.innerHTML = `<span style="color:#f87171;font-weight:800;">НЕУДАЧА! Скин сгорел</span>`;
@@ -1044,7 +978,7 @@ function resetDuelToLobby() { if (!isDuelRunning) { SoundFX.click(); renderDuelL
 
 function startDuelMatch() {
   if (isDuelRunning) return;
-  const playable = state.cases.filter(c => c.cardIds.map(getCardById).filter(Boolean).length > 0);
+  const playable = state.cases.filter(c => c.cardIds.map(getSkinById).filter(Boolean).length > 0);
   if (!playable.length) return;
   SoundFX.click();
   document.getElementById('duel-lobby-view').classList.add('hidden');
@@ -1063,7 +997,7 @@ function pickDuelCaseAndSpin(playerCaseId) {
   if (isDuelRunning) return;
   const playerCase = state.cases.find(c => c.id === playerCaseId);
   if (!playerCase || state.balance < playerCase.price) return;
-  const playable = state.cases.filter(c => c.cardIds.map(getCardById).filter(Boolean).length > 0);
+  const playable = state.cases.filter(c => c.cardIds.map(getSkinById).filter(Boolean).length > 0);
   if (!playable.length) return;
 
   state.balance -= playerCase.price;
@@ -1072,22 +1006,22 @@ function pickDuelCaseAndSpin(playerCaseId) {
 
   duelCompetitors = [{
     id: 'player', name: state.nickname, isPlayer: true, caseObj: playerCase,
-    pool: playerCase.cardIds.map(getCardById).filter(Boolean)
+    pool: playerCase.cardIds.map(getSkinById).filter(Boolean)
   }];
   for (let i = 0; i < duelBotCount; i++) {
     const bc = playable[Math.floor(Math.random() * playable.length)];
     duelCompetitors.push({
       id: 'bot_' + i, name: DUEL_BOT_NAMES[i], isPlayer: false, caseObj: bc,
-      pool: bc.cardIds.map(getCardById).filter(Boolean)
+      pool: bc.cardIds.map(getSkinById).filter(Boolean)
     });
   }
 
   duelCompetitors.forEach(comp => {
-    const card = rollWeightedSkin(comp.pool, 'case');
-    const edition = rollEditionForSkin(card);
+    const skin = rollWeightedSkin(comp.pool);
+    const edition = rollEditionForSkin(skin);
     const wear = rollWearCode();
-    comp.winnerEntry = { card, edition, wear };
-    comp.score = getSkinPrice(card, edition, wear) + (Number(getRarityObj(card.rarity)?.order || 0) * 100000);
+    comp.winnerEntry = { skin, edition, wear };
+    comp.score = getSkinPrice(skin, edition, wear) + (Number(getRarityObj(skin.rarity)?.order || 0) * 100000);
   });
 
   document.getElementById('duel-case-select-view').classList.add('hidden');
@@ -1096,18 +1030,18 @@ function pickDuelCaseAndSpin(playerCaseId) {
   document.getElementById('duel-verdict-banner').textContent = 'Крутим рулетки...';
 
   document.getElementById('duel-competitors-grid').innerHTML = duelCompetitors.map((comp, idx) => {
-    let cardsHtml = '';
+    let skinsHtml = '';
     for (let i = 0; i < 45; i++) {
-      if (i === 38) cardsHtml += createCardHTML(comp.winnerEntry.card, comp.winnerEntry.edition, comp.winnerEntry.wear);
+      if (i === 38) skinsHtml += createSkinTileHTML(comp.winnerEntry.skin, comp.winnerEntry.edition, comp.winnerEntry.wear);
       else {
         const rnd = comp.pool[Math.floor(Math.random() * comp.pool.length)];
-        cardsHtml += createCardHTML(rnd, rollEditionForSkin(rnd), rollWearCode());
+        skinsHtml += createSkinTileHTML(rnd, rollEditionForSkin(rnd), rollWearCode());
       }
     }
     return `
       <div id="duel-lane-${idx}" class="duel-lane">
         <div class="duel-lane-head"><b>${comp.name}</b><span class="duel-lane-case">${comp.caseObj.name}</span></div>
-        <div class="duel-roulette-box"><div class="roulette-pointer"></div><div id="duel-track-${idx}" class="duel-roulette-track">${cardsHtml}</div></div>
+        <div class="duel-roulette-box"><div class="roulette-pointer"></div><div id="duel-track-${idx}" class="duel-roulette-track">${skinsHtml}</div></div>
         <div id="duel-lane-result-${idx}" class="duel-lane-result">Крутится...</div>
       </div>
     `;
@@ -1119,27 +1053,27 @@ function pickDuelCaseAndSpin(playerCaseId) {
       const track = document.getElementById(`duel-track-${idx}`);
       if (!track) return;
       track.style.transition = 'transform 4.2s cubic-bezier(0.12, 0.88, 0.22, 1)';
-      track.style.transform = `translateX(-${38 * 162 + 76}px)`;
+      track.style.transform = `translateX(-${38 * 162 + 75}px)`;
     });
-    trackRouletteCardsPassingPointer(4.2, () => isDuelRunning, 'duel-track-0');
+    trackRouletteSkinsPassingPointer(4.2, () => isDuelRunning, 'duel-track-0');
   }, 30);
 
   setTimeout(() => {
-    stopRouletteCardSoundTracker();
+    stopRouletteSkinSoundTracker();
     const maxScore = Math.max(...duelCompetitors.map(c => c.score));
     const winners = duelCompetitors.filter(c => c.score === maxScore);
     const playerWon = winners.some(w => w.isPlayer) && winners.length === 1;
 
     duelCompetitors.forEach((comp, idx) => {
-      const price = getSkinPrice(comp.winnerEntry.card, comp.winnerEntry.edition, comp.winnerEntry.wear);
-      document.getElementById(`duel-lane-result-${idx}`).textContent = `${formatSkinTitle(comp.winnerEntry.card)} (${comp.winnerEntry.wear}) — ${price} ₽`;
+      const price = getSkinPrice(comp.winnerEntry.skin, comp.winnerEntry.edition, comp.winnerEntry.wear);
+      document.getElementById(`duel-lane-result-${idx}`).textContent = `${formatSkinTitle(comp.winnerEntry.skin)} (${comp.winnerEntry.wear}) — ${price} ₽`;
       if (winners.some(w => w.id === comp.id)) document.getElementById(`duel-lane-${idx}`).classList.add('is-winner');
     });
 
     const verdict = document.getElementById('duel-verdict-banner');
     if (playerWon) {
       SoundFX.win(true);
-      giveSkinToPlayer(duelCompetitors[0].winnerEntry.card, duelCompetitors[0].winnerEntry.edition, duelCompetitors[0].winnerEntry.wear);
+      giveSkinToPlayer(duelCompetitors[0].winnerEntry.skin, duelCompetitors[0].winnerEntry.edition, duelCompetitors[0].winnerEntry.wear);
       state.balance += DUEL_WIN_BONUS;
       saveState(false);
       verdict.className = 'duel-verdict-banner win';
@@ -1156,28 +1090,28 @@ function pickDuelCaseAndSpin(playerCaseId) {
 
 // === ТРЕЙДЫ ===
 function startBotTrade() { SoundFX.click(); tradeMyOfferUids = []; tradeBotOffer = []; document.getElementById('trade-arena').classList.remove('hidden'); renderTradeUI(); }
-function toggleTradeCard(uid) {
+function toggleTradeSkin(uid) {
   SoundFX.click();
   const idx = tradeMyOfferUids.indexOf(uid);
   if (idx > -1) tradeMyOfferUids.splice(idx, 1); else tradeMyOfferUids.push(uid);
   let mySum = 0;
   tradeMyOfferUids.forEach(id => {
     const it = state.inventory.find(x => x.uid === id);
-    const c = it && getCardById(it.cardId);
-    if (c) mySum += getSkinPrice(c, it.edition || 'normal', it.wear || 'FN');
+    const s = it && getSkinById(it.cardId);
+    if (s) mySum += getSkinPrice(s, it.edition || 'normal', it.wear || 'FN');
   });
   let budget = Math.floor(mySum * 0.95);
   tradeBotOffer = [];
-  if (budget > 0 && state.cards.length > 0) {
-    const sorted = [...state.cards].sort((a, b) => b.price - a.price);
+  if (budget > 0 && state.skins.length > 0) {
+    const sorted = [...state.skins].sort((a, b) => b.price - a.price);
     for (let g = 0; g < 10 && budget >= 20; g++) {
-      const avail = sorted.filter(c => getSkinPrice(c, 'normal', 'FT') <= budget);
+      const avail = sorted.filter(s => getSkinPrice(s, 'normal', 'FT') <= budget);
       if (!avail.length) break;
       const pick = avail[Math.floor(Math.random() * Math.min(3, avail.length))];
       const ed = rollEditionForSkin(pick);
       const wr = rollWearCode();
       const pr = getSkinPrice(pick, ed, wr);
-      if (pr <= budget) { tradeBotOffer.push({ card: pick, edition: ed, wear: wr }); budget -= pr; }
+      if (pr <= budget) { tradeBotOffer.push({ skin: pick, edition: ed, wear: wr }); budget -= pr; }
     }
   }
   renderTradeUI();
@@ -1186,30 +1120,30 @@ function renderTradeUI() {
   let mySum = 0;
   document.getElementById('my-trade-offer').innerHTML = tradeMyOfferUids.map(uid => {
     const it = state.inventory.find(x => x.uid === uid);
-    const c = it && getCardById(it.cardId);
-    if (!c) return '';
-    mySum += getSkinPrice(c, it.edition || 'normal', it.wear || 'FN');
-    return createCardHTML(c, it.edition || 'normal', it.wear || 'FN', '', `onclick="toggleTradeCard('${uid}')"`);
+    const s = it && getSkinById(it.cardId);
+    if (!s) return '';
+    mySum += getSkinPrice(s, it.edition || 'normal', it.wear || 'FN');
+    return createSkinTileHTML(s, it.edition || 'normal', it.wear || 'FN', '', `onclick="toggleTradeSkin('${uid}')"`);
   }).join('') || '<div class="hint-text">Выбери скины снизу</div>';
 
   let botSum = 0;
   document.getElementById('bot-trade-offer').innerHTML = tradeBotOffer.map(b => {
-    botSum += getSkinPrice(b.card, b.edition, b.wear);
-    return createCardHTML(b.card, b.edition, b.wear);
+    botSum += getSkinPrice(b.skin, b.edition, b.wear);
+    return createSkinTileHTML(b.skin, b.edition, b.wear);
   }).join('') || '<div class="hint-text">Предложение бота</div>';
 
   document.getElementById('my-trade-sum').textContent = mySum;
   document.getElementById('bot-trade-sum').textContent = botSum;
 
-  const avail = state.inventory.map(it => ({ ...it, card: getCardById(it.cardId) })).filter(x => x.card && !tradeMyOfferUids.includes(x.uid));
+  const avail = state.inventory.map(it => ({ ...it, skin: getSkinById(it.cardId) })).filter(x => x.skin && !tradeMyOfferUids.includes(x.uid));
   document.getElementById('trade-inv-count').textContent = avail.length;
-  document.getElementById('trade-my-inv').innerHTML = avail.map(it => createCardHTML(it.card, it.edition || 'normal', it.wear || 'FN', '', `onclick="toggleTradeCard('${it.uid}')"`)).join('') || '<div class="hint-text">Нет скинов для обмена</div>';
+  document.getElementById('trade-my-inv').innerHTML = avail.map(it => createSkinTileHTML(it.skin, it.edition || 'normal', it.wear || 'FN', '', `onclick="toggleTradeSkin('${it.uid}')"`)).join('') || '<div class="hint-text">Нет скинов для обмена</div>';
   document.getElementById('confirm-trade-btn').disabled = !(mySum > 0 && tradeBotOffer.length > 0);
 }
 function confirmTrade() {
   SoundFX.trade();
   state.inventory = state.inventory.filter(x => !tradeMyOfferUids.includes(x.uid));
-  tradeBotOffer.forEach(b => giveSkinToPlayer(b.card, b.edition, b.wear));
+  tradeBotOffer.forEach(b => giveSkinToPlayer(b.skin, b.edition, b.wear));
   tradeMyOfferUids = [];
   tradeBotOffer = [];
   saveState(false);
@@ -1222,8 +1156,8 @@ function renderCollection() {
   if (sel) sel.innerHTML = state.rarities.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
   const sortMode = document.getElementById('col-sort').value;
-  const mapped = state.inventory.map(it => ({ ...it, card: getCardById(it.cardId) })).filter(x => x.card);
-  const totalVal = mapped.reduce((s, x) => s + getSkinPrice(x.card, x.edition || 'normal', x.wear || 'FN'), 0);
+  const mapped = state.inventory.map(it => ({ ...it, skin: getSkinById(it.cardId) })).filter(x => x.skin);
+  const totalVal = mapped.reduce((s, x) => s + getSkinPrice(x.skin, x.edition || 'normal', x.wear || 'FN'), 0);
 
   document.getElementById('stat-total-cards').textContent = mapped.length;
   document.getElementById('stat-inv-value').textContent = totalVal + ' ₽';
@@ -1233,18 +1167,18 @@ function renderCollection() {
   document.getElementById('collection-grid').innerHTML = sortItems(mapped, sortMode).map(item => {
     const ed = item.edition || 'normal';
     const wr = item.wear || 'FN';
-    const price = getSkinPrice(item.card, ed, wr);
-    const sellBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;" onclick="event.stopPropagation(); sellInventoryCard('${item.uid}')">Продать за ${price} ₽</button>`;
-    return createCardHTML(item.card, ed, wr, '', `onclick="openCard3DModal('${item.card.id}', '${ed}', '${wr}')"`, sellBtn);
+    const price = getSkinPrice(item.skin, ed, wr);
+    const sellBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;" onclick="event.stopPropagation(); sellInventorySkin('${item.uid}')">Продать за ${price} ₽</button>`;
+    return createSkinTileHTML(item.skin, ed, wr, '', `onclick="openSkinImageModal('${item.skin.id}')"`, sellBtn);
   }).join('');
 }
 
-function sellInventoryCard(uid) {
+function sellInventorySkin(uid) {
   const idx = state.inventory.findIndex(x => x.uid === uid);
   if (idx === -1) return;
   const it = state.inventory[idx];
-  const c = getCardById(it.cardId);
-  if (c) { SoundFX.sell(); state.balance += getSkinPrice(c, it.edition || 'normal', it.wear || 'FN'); }
+  const s = getSkinById(it.cardId);
+  if (s) { SoundFX.sell(); state.balance += getSkinPrice(s, it.edition || 'normal', it.wear || 'FN'); }
   state.inventory.splice(idx, 1);
   saveState(false);
   renderCollection();
@@ -1256,8 +1190,8 @@ function sellAllDuplicates() {
   state.inventory = state.inventory.filter(it => {
     const key = `${it.cardId}_${it.edition || 'normal'}_${it.wear || 'FN'}`;
     if (seen.has(key)) {
-      const c = getCardById(it.cardId);
-      if (c) earned += getSkinPrice(c, it.edition || 'normal', it.wear || 'FN');
+      const s = getSkinById(it.cardId);
+      if (s) earned += getSkinPrice(s, it.edition || 'normal', it.wear || 'FN');
       return false;
     }
     seen.add(key);
@@ -1274,8 +1208,8 @@ function sellBySelectedRarity() {
   if (!rid) return;
   let earned = 0;
   state.inventory = state.inventory.filter(it => {
-    const c = getCardById(it.cardId);
-    if (c && c.rarity === rid) { earned += getSkinPrice(c, it.edition || 'normal', it.wear || 'FN'); return false; }
+    const s = getSkinById(it.cardId);
+    if (s && s.rarity === rid) { earned += getSkinPrice(s, it.edition || 'normal', it.wear || 'FN'); return false; }
     return true;
   });
   if (earned > 0) { SoundFX.sell(); state.balance += earned; saveState(false); renderCollection(); }
@@ -1284,8 +1218,8 @@ function sellBySelectedRarity() {
 function sellAllInventoryCards() {
   let earned = 0;
   state.inventory.forEach(it => {
-    const c = getCardById(it.cardId);
-    if (c) earned += getSkinPrice(c, it.edition || 'normal', it.wear || 'FN');
+    const s = getSkinById(it.cardId);
+    if (s) earned += getSkinPrice(s, it.edition || 'normal', it.wear || 'FN');
   });
   if (earned > 0) SoundFX.sell();
   state.inventory = [];
@@ -1294,11 +1228,11 @@ function sellAllInventoryCards() {
   renderCollection();
 }
 
-// === КРАФТЫ ===
+// === КОНТРАКТЫ ===
 function renderCraftUI() {
-  const mapped = state.inventory.map(it => ({ ...it, card: getCardById(it.cardId) })).filter(x => x.card);
+  const mapped = state.inventory.map(it => ({ ...it, skin: getSkinById(it.cardId) })).filter(x => x.skin);
   document.getElementById('craft-inv-grid').innerHTML = sortItems(mapped, document.getElementById('craft-sort').value).map(it =>
-    createCardHTML(it.card, it.edition || 'normal', it.wear || 'FN', craftSelectedUids.includes(it.uid) ? 'selected' : '', `onclick="toggleCraftCard('${it.uid}')"`)
+    createSkinTileHTML(it.skin, it.edition || 'normal', it.wear || 'FN', craftSelectedUids.includes(it.uid) ? 'selected' : '', `onclick="toggleCraftSkin('${it.uid}')"`)
   ).join('');
 
   let sum = 0;
@@ -1307,9 +1241,9 @@ function renderCraftUI() {
     const uid = craftSelectedUids[i];
     if (uid) {
       const it = state.inventory.find(x => x.uid === uid);
-      const c = it && getCardById(it.cardId);
-      if (c) sum += getSkinPrice(c, it.edition || 'normal', it.wear || 'FN');
-      slots += `<div class="craft-mini-slot" onclick="toggleCraftCard('${uid}')"><img src="${c?.img || ''}" style="width:100%;height:100%;object-fit:cover;"></div>`;
+      const s = it && getSkinById(it.cardId);
+      if (s) sum += getSkinPrice(s, it.edition || 'normal', it.wear || 'FN');
+      slots += `<div class="craft-mini-slot" onclick="toggleCraftSkin('${uid}')"><img src="${s?.img || ''}" style="width:100%;height:100%;object-fit:contain;"></div>`;
     } else slots += `<div class="craft-mini-slot">${i + 1}</div>`;
   }
   document.getElementById('craft-selected-slots').innerHTML = slots;
@@ -1318,16 +1252,16 @@ function renderCraftUI() {
   document.getElementById('do-craft-btn').disabled = craftSelectedUids.length !== 10;
 }
 
-function toggleCraftCard(uid) {
+function toggleCraftSkin(uid) {
   SoundFX.click();
   const idx = craftSelectedUids.indexOf(uid);
   if (idx > -1) { craftSelectedUids.splice(idx, 1); }
   else {
     if (craftSelectedUids.length >= 10) return;
     if (craftSelectedUids.length > 0) {
-      const firstC = getCardById(state.inventory.find(x => x.uid === craftSelectedUids[0])?.cardId);
-      const nextC = getCardById(state.inventory.find(x => x.uid === uid)?.cardId);
-      if (firstC?.rarity !== nextC?.rarity) return;
+      const firstS = getSkinById(state.inventory.find(x => x.uid === craftSelectedUids[0])?.cardId);
+      const nextS = getSkinById(state.inventory.find(x => x.uid === uid)?.cardId);
+      if (firstS?.rarity !== nextS?.rarity) return;
     }
     craftSelectedUids.push(uid);
   }
@@ -1336,11 +1270,11 @@ function toggleCraftCard(uid) {
 
 function executeCraft() {
   if (craftSelectedUids.length !== 10) return;
-  const firstC = getCardById(state.inventory.find(x => x.uid === craftSelectedUids[0])?.cardId);
-  const curRar = getRarityObj(firstC?.rarity);
+  const firstS = getSkinById(state.inventory.find(x => x.uid === craftSelectedUids[0])?.cardId);
+  const curRar = getRarityObj(firstS?.rarity);
   const nextRar = [...state.rarities].sort((a, b) => a.order - b.order).find(r => r.order > curRar.order) || curRar;
-  const pool = state.cards.filter(c => c.rarity === nextRar.id);
-  const crafted = (pool.length ? pool : state.cards)[Math.floor(Math.random() * (pool.length || state.cards.length))];
+  const pool = state.skins.filter(s => s.rarity === nextRar.id);
+  const crafted = (pool.length ? pool : state.skins)[Math.floor(Math.random() * (pool.length || state.skins.length))];
   const ed = rollEditionForSkin(crafted);
   const wr = rollWearCode();
 
@@ -1348,54 +1282,25 @@ function executeCraft() {
   craftSelectedUids = [];
   const added = giveSkinToPlayer(crafted, ed, wr);
   SoundFX.win(ed !== 'normal');
-  showWinModal([{ card: crafted, edition: ed, wear: wr, uid: added.uid }]);
+  showWinModal([{ skin: crafted, edition: ed, wear: wr, uid: added.uid }]);
   renderCraftUI();
 }
 
-// === 3D МОДАЛКА ===
-function openCard3DModal(cardId, edition = 'normal', wearCode = 'FN') {
-  const card = getCardById(cardId);
-  if (!card) return;
+// === ПРОСМОТР ТОЛЬКО КАРТИНКИ СКИНА ===
+function openSkinImageModal(skinId) {
+  const skin = getSkinById(skinId);
+  if (!skin) return;
   SoundFX.click();
-  const rar = getRarityObj(card.rarity);
-  const wear = getWearObj(wearCode);
-  const edLabel = edition === 'souvenir' ? '★ Сувенир' : edition === 'stattrak' ? 'StatTrak™' : 'Обычный';
-
-  document.getElementById('card-3d-front').innerHTML = createCardHTML(card, edition, wearCode);
-  document.getElementById('card-3d-info').innerHTML = `
-    <div><span>Скин:</span><b>${formatSkinTitle(card)}</b></div>
-    <div><span>Редкость:</span><b style="color:${rar.color}">${rar.name}</b></div>
-    <div><span>Износ:</span><b>${wear.label} (${wearCode})</b></div>
-    <div><span>Версия:</span><b>${edLabel}</b></div>
-    <div><span>Цена:</span><b style="color:#a3e635">${getSkinPrice(card, edition, wearCode)} ₽</b></div>
-  `;
-  rotX = 0; rotY = 0;
-  document.getElementById('card-3d-flipper').style.transform = 'rotateX(0deg) rotateY(0deg)';
-  document.getElementById('card-3d-modal').classList.remove('hidden');
+  const img = document.getElementById('skin-preview-only-img');
+  img.src = skin.img;
+  img.alt = formatSkinTitle(skin);
+  document.getElementById('skin-preview-modal').classList.remove('hidden');
 }
 
-function closeCard3DModal(e) {
-  if (e && e.target !== document.getElementById('card-3d-modal')) return;
-  isDragging3D = false;
-  document.getElementById('card-3d-modal').classList.add('hidden');
+function closeSkinPreviewModal(e) {
+  if (e && e.target !== document.getElementById('skin-preview-modal')) return;
+  document.getElementById('skin-preview-modal').classList.add('hidden');
 }
-
-(function init3D() {
-  const stage = document.getElementById('stage-3d');
-  if (!stage) return;
-  stage.addEventListener('pointerdown', (e) => {
-    isDragging3D = true; dragStartX = e.clientX; dragStartY = e.clientY;
-    try { stage.setPointerCapture(e.pointerId); } catch (_) {}
-  });
-  stage.addEventListener('pointermove', (e) => {
-    if (!isDragging3D) return;
-    rotY += (e.clientX - dragStartX) * 0.7;
-    rotX = Math.max(-55, Math.min(55, rotX - (e.clientY - dragStartY) * 0.6));
-    dragStartX = e.clientX; dragStartY = e.clientY;
-    document.getElementById('card-3d-flipper').style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-  });
-  stage.addEventListener('pointerup', () => { isDragging3D = false; });
-})();
 
 // === АДМИНКА ===
 const DEFAULT_RARITY_PALETTE = ['#eb4b4b', '#d32ce6', '#8847ff', '#4b69ff', '#facc15'];
@@ -1427,7 +1332,7 @@ function saveSpecialRates() {
   state.souvenirMultiplier = Math.max(1, Number(document.getElementById('cfg-souv-mult').value) || 3.5);
   state.souvenirChance = Math.max(0, Math.min(1, Number(document.getElementById('cfg-souv-chance').value) || 0));
   saveState(true);
-  updateCardPreview();
+  updateSkinPreview();
 }
 
 function setAdminBalanceStatus(msg, err = false) {
@@ -1527,35 +1432,33 @@ function renderAdminUI() {
   editRarSel.innerHTML = rarOpts;
 
   document.getElementById('admin-rarities-list').innerHTML = state.rarities.map(r => `
-    <div class="rar-manage-card" style="--rar-color:${r.color};--rar-bg:${r.bg};--rar-gradient:${buildRarityGradientCSS(r)};">
+    <div class="rar-manage-card" style="--rar-color:${r.color};">
       <div class="rar-manage-top"><span style="color:${r.color}">${r.name}</span><button onclick="adminDeleteRarity('${r.id}')" style="background:none;border:none;color:#f87171;cursor:pointer;">✕</button></div>
-      <div class="rar-chance-row"><span>Кейсы:</span><input type="text" value="${r.weight}" onchange="updateRarityWeight('${r.id}', this.value, 'case')"></div>
-      <div class="rar-chance-row"><span>Паки:</span><input type="text" value="${r.packWeight ?? r.weight}" onchange="updateRarityWeight('${r.id}', this.value, 'pack')"></div>
+      <div class="rar-chance-row"><span>Шанс:</span><input type="text" value="${r.weight}" onchange="updateRarityWeight('${r.id}', this.value)"></div>
     </div>
   `).join('');
 
-  document.getElementById('admin-case-cards-selector').innerHTML = state.cards.map(c => `
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="checkbox" class="case-card-cb" value="${c.id}"> ${formatSkinTitle(c)}</label>
+  document.getElementById('admin-case-skins-selector').innerHTML = state.skins.map(s => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="checkbox" class="case-skin-cb" value="${s.id}"> ${formatSkinTitle(s)}</label>
   `).join('');
 
   renderAdminCasesList();
   updateCasePreview();
 
-  document.getElementById('admin-cards-count').textContent = state.cards.length;
-  document.getElementById('admin-all-cards').innerHTML = state.cards.map(c => {
-    const ed = c.hasSouvenir ? 'souvenir' : c.hasStatTrak ? 'stattrak' : 'normal';
-    const delBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;color:#f87171;" onclick="event.stopPropagation(); adminDeleteCard('${c.id}')">Удалить</button>`;
-    return createCardHTML(c, ed, 'FN', c.id === editingCardId ? 'editing-target' : '', `onclick="openEditCardPanel('${c.id}')"`, delBtn);
+  document.getElementById('admin-skins-count').textContent = state.skins.length;
+  document.getElementById('admin-all-skins').innerHTML = state.skins.map(s => {
+    const ed = s.hasSouvenir ? 'souvenir' : s.hasStatTrak ? 'stattrak' : 'normal';
+    const delBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;color:#f87171;" onclick="event.stopPropagation(); adminDeleteSkin('${s.id}')">Удалить</button>`;
+    return createSkinTileHTML(s, ed, 'FN', s.id === editingSkinId ? 'selected' : '', `onclick="openEditSkinPanel('${s.id}')"`, delBtn);
   }).join('');
 
-  updateCardPreview();
+  updateSkinPreview();
 }
 
-function updateRarityWeight(id, val, mode) {
+function updateRarityWeight(id, val) {
   const r = state.rarities.find(x => x.id === id);
   if (!r) return;
-  if (mode === 'pack') r.packWeight = sanitizeChanceInput(val);
-  else r.weight = sanitizeChanceInput(val);
+  r.weight = sanitizeChanceInput(val);
   saveState(true); renderAdminUI();
 }
 
@@ -1564,9 +1467,8 @@ function adminAddRarity() {
   if (!name) return;
   const gradColors = Array.from(document.querySelectorAll('#new-rar-colors-box .new-rar-grad-color')).map(i => i.value);
   const weight = sanitizeChanceInput(document.getElementById('new-rar-weight').value);
-  const packWeight = sanitizeChanceInput(document.getElementById('new-rar-pack-weight').value);
   const id = name.toLowerCase().replace(/\s+/g, '_');
-  state.rarities.push({ id, name, color: gradColors[0], bg: gradColors[gradColors.length - 1], gradientColors: gradColors, order: 1, weight, packWeight, effect: 'glow' });
+  state.rarities.push({ id, name, color: gradColors[0], bg: gradColors[gradColors.length - 1], gradientColors: gradColors, order: 1, weight });
   saveState(true); renderAdminUI();
 }
 
@@ -1576,8 +1478,8 @@ function adminDeleteRarity(id) {
   saveState(true); renderAdminUI();
 }
 
-function updateCardPreview() {
-  const box = document.getElementById('card-creator-preview');
+function updateSkinPreview() {
+  const box = document.getElementById('skin-creator-preview');
   if (!box) return;
   const sample = {
     id: 'prev',
@@ -1591,14 +1493,14 @@ function updateCardPreview() {
   };
   const ed = document.getElementById('preview-edition')?.value || 'normal';
   const wr = document.getElementById('preview-wear')?.value || 'FN';
-  box.innerHTML = createCardHTML(sample, ed, wr);
+  box.innerHTML = createSkinTileHTML(sample, ed, wr);
 }
 
-function adminAddCard() {
+function adminAddSkin() {
   const weapon = document.getElementById('new-skin-weapon').value.trim() || 'Weapon';
   const name = document.getElementById('new-skin-name').value.trim();
   if (!name) return;
-  state.cards.push({
+  state.skins.push({
     id: 's_' + Date.now(),
     weapon,
     name,
@@ -1611,28 +1513,28 @@ function adminAddCard() {
   saveState(true); renderAdminUI();
 }
 
-function openEditCardPanel(id) {
-  const c = getCardById(id);
-  if (!c) return;
-  editingCardId = id;
-  document.getElementById('admin-edit-card-panel').classList.remove('hidden');
-  document.getElementById('edit-skin-heading').textContent = formatSkinTitle(c);
-  document.getElementById('edit-skin-weapon').value = c.weapon || '';
-  document.getElementById('edit-skin-name').value = c.name || '';
-  document.getElementById('edit-skin-rarity').value = c.rarity;
-  document.getElementById('edit-skin-price').value = c.price || 1000;
-  document.getElementById('edit-skin-img').value = c.img || '';
-  document.getElementById('edit-skin-has-st').checked = Boolean(c.hasStatTrak);
-  document.getElementById('edit-skin-has-souv').checked = Boolean(c.hasSouvenir);
-  updateEditCardPreview();
+function openEditSkinPanel(id) {
+  const s = getSkinById(id);
+  if (!s) return;
+  editingSkinId = id;
+  document.getElementById('admin-edit-skin-panel').classList.remove('hidden');
+  document.getElementById('edit-skin-heading').textContent = formatSkinTitle(s);
+  document.getElementById('edit-skin-weapon').value = s.weapon || '';
+  document.getElementById('edit-skin-name').value = s.name || '';
+  document.getElementById('edit-skin-rarity').value = s.rarity;
+  document.getElementById('edit-skin-price').value = s.price || 1000;
+  document.getElementById('edit-skin-img').value = s.img || '';
+  document.getElementById('edit-skin-has-st').checked = Boolean(s.hasStatTrak);
+  document.getElementById('edit-skin-has-souv').checked = Boolean(s.hasSouvenir);
+  updateEditSkinPreview();
 }
 
-function cancelEditCard() { editingCardId = null; document.getElementById('admin-edit-card-panel').classList.add('hidden'); }
+function cancelEditSkin() { editingSkinId = null; document.getElementById('admin-edit-skin-panel').classList.add('hidden'); }
 
-function updateEditCardPreview() {
-  if (!editingCardId) return;
+function updateEditSkinPreview() {
+  if (!editingSkinId) return;
   const sample = {
-    id: editingCardId,
+    id: editingSkinId,
     weapon: document.getElementById('edit-skin-weapon').value.trim(),
     name: document.getElementById('edit-skin-name').value.trim() || 'Skin',
     rarity: document.getElementById('edit-skin-rarity').value,
@@ -1641,33 +1543,33 @@ function updateEditCardPreview() {
     hasSouvenir: Boolean(document.getElementById('edit-skin-has-souv').checked),
     img: document.getElementById('edit-skin-img').value.trim() || 'https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'
   };
-  document.getElementById('edit-card-preview').innerHTML = createCardHTML(sample, sample.hasSouvenir ? 'souvenir' : sample.hasStatTrak ? 'stattrak' : 'normal', 'FN');
+  document.getElementById('edit-skin-preview').innerHTML = createSkinTileHTML(sample, sample.hasSouvenir ? 'souvenir' : sample.hasStatTrak ? 'stattrak' : 'normal', 'FN');
 }
 
-function saveEditedCard() {
-  const idx = state.cards.findIndex(c => c.id === editingCardId);
+function saveEditedSkin() {
+  const idx = state.skins.findIndex(s => s.id === editingSkinId);
   if (idx === -1) return;
-  state.cards[idx] = {
-    ...state.cards[idx],
+  state.skins[idx] = {
+    ...state.skins[idx],
     weapon: document.getElementById('edit-skin-weapon').value.trim(),
-    name: document.getElementById('edit-skin-name').value.trim() || state.cards[idx].name,
+    name: document.getElementById('edit-skin-name').value.trim() || state.skins[idx].name,
     rarity: document.getElementById('edit-skin-rarity').value,
     price: Number(document.getElementById('edit-skin-price').value) || 1000,
     hasStatTrak: Boolean(document.getElementById('edit-skin-has-st').checked),
     hasSouvenir: Boolean(document.getElementById('edit-skin-has-souv').checked),
-    img: document.getElementById('edit-skin-img').value.trim() || state.cards[idx].img
+    img: document.getElementById('edit-skin-img').value.trim() || state.skins[idx].img
   };
   saveState(true); renderAdminUI();
 }
 
-function deleteEditingCard() {
-  if (!editingCardId) return;
-  adminDeleteCard(editingCardId);
-  cancelEditCard();
+function deleteEditingSkin() {
+  if (!editingSkinId) return;
+  adminDeleteSkin(editingSkinId);
+  cancelEditSkin();
 }
 
-function adminDeleteCard(id) {
-  state.cards = state.cards.filter(c => c.id !== id);
+function adminDeleteSkin(id) {
+  state.skins = state.skins.filter(s => s.id !== id);
   saveState(true); renderAdminUI();
 }
 
@@ -1679,7 +1581,7 @@ function updateCasePreview() {
 
 function adminAddCase() {
   const name = document.getElementById('new-case-name').value.trim();
-  const cardIds = Array.from(document.querySelectorAll('.case-card-cb:checked')).map(cb => cb.value);
+  const cardIds = Array.from(document.querySelectorAll('.case-skin-cb:checked')).map(cb => cb.value);
   if (!name || !cardIds.length) return;
   state.cases.push({
     id: 'case_' + Date.now(),
@@ -1695,7 +1597,7 @@ function adminAddCase() {
 function renderAdminCasesList() {
   document.getElementById('admin-cases-count').textContent = state.cases.length;
   document.getElementById('admin-cases-list').innerHTML = state.cases.map(c => `
-    <div class="admin-case-card ${c.id === editingCaseId ? 'editing-target' : ''}">
+    <div class="admin-case-card">
       <img src="${c.img}" onerror="this.src='https://placehold.co/320x180/181a20/ffffff?text=CASE'">
       <b>${c.name}</b>
       <div class="admin-case-meta">${c.price} ₽ • ${c.cardIds.length} скинов</div>
@@ -1719,8 +1621,8 @@ function openEditCasePanel(caseId) {
   document.getElementById('edit-case-category').innerHTML = state.caseCategories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
   document.getElementById('edit-case-category').value = c.categoryId;
   const set = new Set(c.cardIds);
-  document.getElementById('admin-edit-case-cards-selector').innerHTML = state.cards.map(sk => `
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="checkbox" class="edit-case-card-cb" value="${sk.id}" ${set.has(sk.id) ? 'checked' : ''}> ${formatSkinTitle(sk)}</label>
+  document.getElementById('admin-edit-case-skins-selector').innerHTML = state.skins.map(sk => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="checkbox" class="edit-case-skin-cb" value="${sk.id}" ${set.has(sk.id) ? 'checked' : ''}> ${formatSkinTitle(sk)}</label>
   `).join('');
   updateEditCasePreview();
 }
@@ -1735,7 +1637,7 @@ function updateEditCasePreview() {
 function saveEditedCase() {
   const idx = state.cases.findIndex(x => x.id === editingCaseId);
   if (idx === -1) return;
-  const cardIds = Array.from(document.querySelectorAll('.edit-case-card-cb:checked')).map(cb => cb.value);
+  const cardIds = Array.from(document.querySelectorAll('.edit-case-skin-cb:checked')).map(cb => cb.value);
   if (!cardIds.length) return;
   state.cases[idx] = {
     ...state.cases[idx],
@@ -1762,8 +1664,8 @@ function showWinModal(itemsList) {
   const mc = document.querySelector('#win-modal .modal-content');
   mc.classList.toggle('multi-win-content', lastWonItems.length > 1);
   document.getElementById('win-modal-title').textContent = lastWonItems.length > 1 ? `Тебе выпало (${lastWonItems.length}):` : 'Тебе выпало!';
-  document.getElementById('win-card-container').innerHTML = lastWonItems.map(e => createCardHTML(e.card, e.edition, e.wear)).join('');
-  const totalPrice = lastWonItems.reduce((s, e) => s + getSkinPrice(e.card, e.edition, e.wear), 0);
+  document.getElementById('win-skin-container').innerHTML = lastWonItems.map(e => createSkinTileHTML(e.skin, e.edition, e.wear)).join('');
+  const totalPrice = lastWonItems.reduce((s, e) => s + getSkinPrice(e.skin, e.edition, e.wear), 0);
   const sellBtn = document.getElementById('sell-won-btn');
   sellBtn.textContent = lastWonItems.length > 1 ? `Продать все за ${totalPrice} ₽` : `Продать за ${totalPrice} ₽`;
   sellBtn.disabled = totalPrice <= 0;
@@ -1772,14 +1674,14 @@ function showWinModal(itemsList) {
 
 function closeWinModal() { SoundFX.click(); lastWonItems = []; document.getElementById('win-modal').classList.add('hidden'); }
 
-function sellWonCard() {
+function sellWonSkin() {
   if (!lastWonItems.length) return;
   const uids = new Set(lastWonItems.map(x => x.uid));
   let earned = 0;
   state.inventory = state.inventory.filter(it => {
     if (uids.has(it.uid)) {
-      const c = getCardById(it.cardId);
-      if (c) earned += getSkinPrice(c, it.edition || 'normal', it.wear || 'FN');
+      const s = getSkinById(it.cardId);
+      if (s) earned += getSkinPrice(s, it.edition || 'normal', it.wear || 'FN');
       return false;
     }
     return true;
