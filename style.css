@@ -289,7 +289,7 @@ select, input[type="text"], input[type="number"], input[type="password"] {
   .roulettes-multi-container.is-multi .roulette-track .card-wrap { width: 92px; min-width: 92px; }
 }
 
-/* КНОПКА ЗАЛИТЬ В ОБЛАКО И ПОИСК ПО ЦЕНЕ В ИНВЕНТАРЕ */
+/* КНОПКА ЗАЛИТЬ В ОБЛАКО И ПОИСК ПО ЦЕНЕ В АПГРЕЙДЕ */
 .cloud-upload-btn {
   border-color: rgba(245, 185, 21, 0.45);
   color: var(--accent-gold);
@@ -309,31 +309,21 @@ select, input[type="text"], input[type="number"], input[type="password"] {
   border-radius: 8px;
   font-weight: 600;
   font-size: 12px;
-  width: 112px;
+  width: 108px;
   max-width: 100%;
 }
 .price-search-input:focus {
   outline: none;
   border-color: var(--accent-gold);
 }
-input[type="text"].price-search-input {
-  width: 165px;
+
+/* ПЛАШКИ ЦЕЛЕЙ В АПГРЕЙДЕ (БЕЗ ВРАЩЕНИЯ ПО КЛИКУ) */
+#upgrade-target-cards.upg-square-grid {
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 12px;
 }
 
-/* ПЛАШКИ СКИНОВ В ИНВЕНТАРЕ (БЕЗ ВРАЩЕНИЯ ПО КЛИКУ) */
-.collection-compact-grid {
-  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
-  gap: 14px;
-}
-
-.inv-tile-wrap {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  min-width: 0;
-}
-
-.inv-skin-tile {
+.upg-target-tile {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1.04;
@@ -348,7 +338,16 @@ input[type="text"].price-search-input {
   justify-content: space-between;
   padding: 9px 10px 12px;
   user-select: none;
-  cursor: default;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.upg-target-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.upg-target-tile.selected {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(245, 185, 21, 0.45);
 }
 
 .inv-tile-price {
@@ -427,12 +426,4 @@ input[type="text"].price-search-input {
   background: var(--rar-bar, #d946ef);
   box-shadow: 0 -1px 10px var(--rar-bar-glow, rgba(217, 70, 239, 0.65));
   z-index: 6;
-}
-
-.inv-tile-sell-btn {
-  width: 100%;
-  margin-top: 6px;
-  padding: 6px 8px;
-  font-size: 11px;
-  border-radius: 6px;
 }
