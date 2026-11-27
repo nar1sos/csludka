@@ -879,9 +879,61 @@ function renderUpgradeMyInventory() {
   appendEmptyUpgradeSlots(grid, sorted.length, 3);
 }
 
+function formatRubPrice(val) {
+  return Math.round(Number(val) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₽';
+}
+
+function resetUpgradePriceFilter() {
+  SoundFX.click();
+  const minEl = document.getElementById('upg-min-price');
+  const maxEl = document.getElementById('upg-max-price');
+  const searchEl = document.getElementById('upg-target-search');
+  if (minEl) minEl.value = '';
+  if (maxEl) maxEl.value = '';
+  if (searchEl) searchEl.value = '';
+  renderUpgradeTargets();
+}
+
+function createUpgradeTargetTileHTML(card, edition = 'normal', wearCode = 'FN', isSelected = false) {
+  const rar = getRarityObj(card.rarity);
+  const price = getSkinPrice(card, edition, wearCode);
+  const gradCSS = buildRarityGradientCSS(rar);
+  const selClass = isSelected ? 'selected' : '';
+  const weaponLine = edition === 'stattrak'
+    ? `StatTrak™ ${card.weapon || 'Weapon'}`
+    : edition === 'souvenir'
+      ? `★ ${card.weapon || 'Weapon'}`
+      : (card.weapon || 'Weapon');
+  const skinName = card.name || 'Скин';
+  const barColor = rar?.color || '#d946ef';
+
+  return `
+    <div class="upg-target-tile ${selClass}"
+         style="--rar-color: ${rar.color}; --rar-bg: ${rar.bg}; --rar-gradient: ${gradCSS}; --rar-bar: ${barColor}; --rar-bar-glow: ${barColor};"
+         data-upg-target="${card.id}_${edition}_${wearCode}"
+         onclick="selectUpgradeTarget('${card.id}', '${edition}', '${wearCode}')">
+      <div class="inv-tile-price">${formatRubPrice(price)}</div>
+      <div class="inv-tile-radar"></div>
+      <img class="inv-tile-img" loading="lazy" decoding="async" draggable="false"
+           src="${card.img}" alt="${formatSkinTitle(card)}"
+           onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'">
+      <div class="inv-tile-footer">
+        <div class="inv-tile-weapon" title="${weaponLine}">${weaponLine}</div>
+        <div class="inv-tile-name" title="${skinName}">${skinName}</div>
+      </div>
+      <div class="inv-tile-rarity-bar"></div>
+    </div>
+  `;
+}
+
 function renderUpgradeTargets() {
   const sortMode = document.getElementById('upg-target-sort')?.value || 'price-asc';
   const searchQ = (document.getElementById('upg-target-search')?.value || '').trim().toLowerCase();
+  const rawMin = document.getElementById('upg-min-price')?.value;
+  const rawMax = document.getElementById('upg-max-price')?.value;
+  const minPrice = rawMin !== undefined && String(rawMin).trim() !== '' ? Number(rawMin) : null;
+  const maxPrice = rawMax !== undefined && String(rawMax).trim() !== '' ? Number(rawMax) : null;
+
   const edFilter = document.getElementById('upg-target-edition-filter')?.value || 'all';
   const wearCode = document.getElementById('upg-target-wear-filter')?.value || 'FN';
   upgSelectedTargetWear = wearCode;
@@ -904,25 +956,28 @@ function renderUpgradeTargets() {
     targets = targets.filter(t => formatSkinTitle(t.card).toLowerCase().includes(searchQ));
   }
 
+  if (minPrice !== null && Number.isFinite(minPrice)) {
+    targets = targets.filter(t => getSkinPrice(t.card, t.edition, t.wear) >= minPrice);
+  }
+  if (maxPrice !== null && Number.isFinite(maxPrice)) {
+    targets = targets.filter(t => getSkinPrice(t.card, t.edition, t.wear) <= maxPrice);
+  }
+
   const sorted = sortItems(targets, sortMode);
   document.getElementById('upg-targets-count').textContent = sorted.length;
 
   const grid = document.getElementById('upgrade-target-cards');
   grid.innerHTML = '';
+  if (sorted.length === 0) {
+    grid.innerHTML = `<div class="hint-text" style="grid-column:1/-1;text-align:center;padding:18px;">По цене или запросу цели не найдены</div>`;
+    return;
+  }
   sorted.forEach(t => {
     const sel = t.card.id === upgSelectedTargetId && t.edition === upgSelectedTargetEdition && t.wear === upgSelectedTargetWear;
     const d = document.createElement('div');
-    d.innerHTML = createUpgradeSquareTileHTML(
-      t.card,
-      t.edition,
-      t.wear,
-      sel,
-      `onclick="selectUpgradeTarget('${t.card.id}', '${t.edition}', '${t.wear}')"`,
-      `data-upg-target="${t.card.id}_${t.edition}_${t.wear}"`
-    );
+    d.innerHTML = createUpgradeTargetTileHTML(t.card, t.edition, t.wear, sel);
     if (d.firstElementChild) grid.appendChild(d.firstElementChild);
   });
-  appendEmptyUpgradeSlots(grid, sorted.length, 3);
 }
 
 function selectUpgradeSource(uid) {
@@ -940,7 +995,7 @@ function selectUpgradeTarget(cardId, edition, wear) {
   upgSelectedTargetEdition = edition;
   upgSelectedTargetWear = wear;
   const key = `${cardId}_${edition}_${wear}`;
-  document.querySelectorAll('#upgrade-target-cards .upg-square-tile').forEach(el => el.classList.toggle('selected', el.dataset.upgTarget === key));
+  document.querySelectorAll('#upgrade-target-cards .upg-target-tile').forEach(el => el.classList.toggle('selected', el.dataset.upgTarget === key));
   updateUpgradeSlotsAndChance();
 }
 
@@ -1222,103 +1277,25 @@ function confirmTrade() {
 }
 
 // === ИНВЕНТАРЬ ===
-function formatRubPrice(val) {
-  return Math.round(Number(val) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₽';
-}
-
-function resetCollectionPriceFilter() {
-  SoundFX.click();
-  const minEl = document.getElementById('col-min-price');
-  const maxEl = document.getElementById('col-max-price');
-  const nameEl = document.getElementById('col-search-name');
-  if (minEl) minEl.value = '';
-  if (maxEl) maxEl.value = '';
-  if (nameEl) nameEl.value = '';
-  renderCollection();
-}
-
-function createInventoryTileHTML(item, card, edition = 'normal', wearCode = 'FN') {
-  const rar = getRarityObj(card.rarity);
-  const price = getSkinPrice(card, edition, wearCode);
-  const gradCSS = buildRarityGradientCSS(rar);
-  const weaponLine = edition === 'stattrak'
-    ? `StatTrak™ ${card.weapon || 'Weapon'}`
-    : edition === 'souvenir'
-      ? `★ ${card.weapon || 'Weapon'}`
-      : (card.weapon || 'Weapon');
-  const skinName = card.name || 'Скин';
-  const barColor = rar?.color || '#d946ef';
-  const barGlow = rar?.color || '#d946ef';
-
-  return `
-    <div class="inv-tile-wrap" data-uid="${item.uid}">
-      <div class="inv-skin-tile"
-           style="--rar-color: ${rar.color}; --rar-bg: ${rar.bg}; --rar-gradient: ${gradCSS}; --rar-bar: ${barColor}; --rar-bar-glow: ${barGlow};">
-        <div class="inv-tile-price">${formatRubPrice(price)}</div>
-        <div class="inv-tile-radar"></div>
-        <img class="inv-tile-img" loading="lazy" decoding="async" draggable="false"
-             src="${card.img}" alt="${formatSkinTitle(card)}"
-             onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'">
-        <div class="inv-tile-footer">
-          <div class="inv-tile-weapon" title="${weaponLine}">${weaponLine}</div>
-          <div class="inv-tile-name" title="${skinName}">${skinName}</div>
-        </div>
-        <div class="inv-tile-rarity-bar"></div>
-      </div>
-      <button type="button" class="secondary-btn inv-tile-sell-btn" onclick="sellInventoryCard('${item.uid}')">
-        Продать за ${formatRubPrice(price)}
-      </button>
-    </div>
-  `;
-}
-
 function renderCollection() {
   const sel = document.getElementById('sell-rarity-select');
-  if (sel) {
-    const prevVal = sel.value;
-    sel.innerHTML = state.rarities.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
-    if (prevVal && state.rarities.some(r => r.id === prevVal)) sel.value = prevVal;
-  }
+  if (sel) sel.innerHTML = state.rarities.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
 
   const sortMode = document.getElementById('col-sort').value;
-  const rawMin = document.getElementById('col-min-price')?.value;
-  const rawMax = document.getElementById('col-max-price')?.value;
-  const searchName = (document.getElementById('col-search-name')?.value || '').trim().toLowerCase();
-
-  const minPrice = rawMin !== undefined && String(rawMin).trim() !== '' ? Number(rawMin) : null;
-  const maxPrice = rawMax !== undefined && String(rawMax).trim() !== '' ? Number(rawMax) : null;
-
   const mapped = state.inventory.map(it => ({ ...it, card: getCardById(it.cardId) })).filter(x => x.card);
   const totalVal = mapped.reduce((s, x) => s + getSkinPrice(x.card, x.edition || 'normal', x.wear || 'FN'), 0);
 
   document.getElementById('stat-total-cards').textContent = mapped.length;
-  document.getElementById('stat-inv-value').textContent = formatRubPrice(totalVal);
+  document.getElementById('stat-inv-value').textContent = totalVal + ' ₽';
   document.getElementById('stat-opened').textContent = state.stats.opened;
   document.getElementById('stat-upgrades').textContent = state.stats.upgrades;
 
-  const filtered = mapped.filter(item => {
+  document.getElementById('collection-grid').innerHTML = sortItems(mapped, sortMode).map(item => {
     const ed = item.edition || 'normal';
     const wr = item.wear || 'FN';
     const price = getSkinPrice(item.card, ed, wr);
-    if (minPrice !== null && Number.isFinite(minPrice) && price < minPrice) return false;
-    if (maxPrice !== null && Number.isFinite(maxPrice) && price > maxPrice) return false;
-    if (searchName) {
-      const hay = `${item.card.weapon || ''} ${item.card.name || ''} ${wr} ${ed}`.toLowerCase();
-      if (!hay.includes(searchName)) return false;
-    }
-    return true;
-  });
-
-  const grid = document.getElementById('collection-grid');
-  if (filtered.length === 0) {
-    grid.innerHTML = `<div class="hint-text" style="grid-column:1/-1;text-align:center;padding:24px;">По заданным параметрам скинов не найдено</div>`;
-    return;
-  }
-
-  grid.innerHTML = sortItems(filtered, sortMode).map(item => {
-    const ed = item.edition || 'normal';
-    const wr = item.wear || 'FN';
-    return createInventoryTileHTML(item, item.card, ed, wr);
+    const sellBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;" onclick="event.stopPropagation(); sellInventoryCard('${item.uid}')">Продать за ${price} ₽</button>`;
+    return createCardHTML(item.card, ed, wr, '', `onclick="openCard3DModal('${item.card.id}', '${ed}', '${wr}')"`, sellBtn);
   }).join('');
 }
 
