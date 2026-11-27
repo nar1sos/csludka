@@ -169,9 +169,9 @@ function getSkinById(id) { return skinMapCache.get(id); }
 function getWearObj(code) { return wearMapCache.get(code) || state.wears[0] || { code: 'FN', label: 'Factory New', priceMult: 1, weight: 100 }; }
 
 function getRarityGradientColors(rar) {
-  if (!rar) return ['#e84393', '#14151b'];
+  if (!rar) return ['#4b69ff', '#14161c'];
   if (Array.isArray(rar.gradientColors) && rar.gradientColors.length > 0) return rar.gradientColors.slice(0, 5);
-  return [rar.color || '#e84393', rar.bg || '#14151b'];
+  return [rar.color || '#4b69ff', rar.bg || '#14161c'];
 }
 
 function sanitizeChanceInput(rawVal) {
@@ -320,10 +320,6 @@ function formatSkinTitle(skin) {
   return n || w || 'Skin';
 }
 
-function escapeHtmlAttr(str) {
-  return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-}
-
 function sortItems(items, sortMode) {
   return [...items].sort((a, b) => {
     const skinA = a.skin || a;
@@ -341,42 +337,31 @@ function sortItems(items, sortMode) {
   });
 }
 
-// === КАРТОЧКА СКИНА КАК НА СКРИНШОТЕ ===
 function createSkinTileHTML(skin, edition = 'normal', wearCode = 'FN', extraClass = '', clickAttr = '', actionBtnHTML = '') {
   const rar = getRarityObj(skin.rarity);
   const price = getSkinPrice(skin, edition, wearCode);
   const edClass = edition === 'souvenir' ? 'is-souvenir' : edition === 'stattrak' ? 'is-stattrak' : '';
-  const titleText = formatSkinTitle(skin);
-  const safeTitle = escapeHtmlAttr(titleText);
 
   const badges = [];
   if (edition === 'stattrak') badges.push('<span class="st-pill">ST™</span>');
-  if (edition === 'souvenir') badges.push('<span class="souv-pill">★ SOUV</span>');
+  if (edition === 'souvenir') badges.push('<span class="souv-pill">★ SOUVENIR</span>');
 
   return `
-    <div class="card-wrap">
-      <div class="cs-skin-card ${edClass} ${extraClass}"
+    <div class="skin-wrap">
+      <div class="cs-skin-tile ${edClass} ${extraClass}"
            style="--rar-color: ${rar.color};"
            ${clickAttr}>
-        <div class="skin-card-top">
-          <span class="wear-badge">${wearCode}</span>
-          <span class="rarity-label-top">${rar.name}</span>
+        <div class="skin-top-row">
+          <span class="wear-tag">${wearCode}</span>
+          <span class="skin-rarity-dot">${rar.name}</span>
         </div>
-        <div class="skin-img-frame">
-          <img loading="lazy"
-               decoding="async"
-               draggable="false"
-               src="${escapeHtmlAttr(skin.img)}"
-               alt="${safeTitle}"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-          <span class="skin-img-fallback" style="display:none;">${safeTitle}</span>
+        <img class="skin-thumb" loading="lazy" decoding="async" draggable="false" src="${skin.img}" alt="${formatSkinTitle(skin)}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'">
+        <div class="skin-info-block">
+          <div class="skin-weapon">${skin.weapon || 'Weapon'}</div>
+          <div class="skin-title">${skin.name}</div>
         </div>
-        <div class="skin-text-block">
-          <div class="skin-weapon-line">${skin.weapon || 'Weapon'}</div>
-          <div class="skin-name-line">${skin.name}</div>
-        </div>
-        <div class="skin-footer-line">
-          <span class="skin-price-val">${price} ₽</span>
+        <div class="skin-bottom-area">
+          <span class="skin-price">${price} ₽</span>
           <div>${badges.join('')}</div>
         </div>
       </div>
@@ -390,7 +375,6 @@ function createUpgradeSquareTileHTML(skin, edition = 'normal', wearCode = 'FN', 
   const price = getSkinPrice(skin, edition, wearCode);
   const selClass = isSelected ? 'selected' : '';
   const edTag = edition === 'souvenir' ? 'SOUV ' : edition === 'stattrak' ? 'ST ' : '';
-  const safeTitle = escapeHtmlAttr(formatSkinTitle(skin));
 
   return `
     <div class="upg-square-tile ${selClass}"
@@ -399,9 +383,9 @@ function createUpgradeSquareTileHTML(skin, edition = 'normal', wearCode = 'FN', 
          ${clickAttr}>
       <div class="upg-tile-top">
         <span class="upg-tile-price">${price} ₽</span>
-        <span class="wear-badge" style="font-size:9px;padding:1px 4px;">${edTag}${wearCode}</span>
+        <span class="wear-tag" style="font-size:9px;padding:1px 4px;">${edTag}${wearCode}</span>
       </div>
-      <img class="upg-tile-img" loading="lazy" decoding="async" draggable="false" src="${escapeHtmlAttr(skin.img)}" alt="${safeTitle}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS'">
+      <img class="upg-tile-img" loading="lazy" decoding="async" draggable="false" src="${skin.img}" alt="${formatSkinTitle(skin)}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS'">
       <div class="upg-tile-name">${formatSkinTitle(skin)}</div>
     </div>
   `;
@@ -678,9 +662,9 @@ function rollWeightedSkin(poolSkins) {
 }
 
 function getRouletteStepWidth() {
-  const firstTile = document.querySelector('.roulette-track .card-wrap');
+  const firstTile = document.querySelector('.roulette-track .skin-wrap');
   const trackEl = firstTile ? firstTile.parentElement : null;
-  const tileW = firstTile ? firstTile.getBoundingClientRect().width : 210;
+  const tileW = firstTile ? firstTile.getBoundingClientRect().width : 185;
   let gapW = 12;
   if (trackEl) {
     const g = parseFloat(getComputedStyle(trackEl).columnGap || getComputedStyle(trackEl).gap);
@@ -704,7 +688,7 @@ function trackRouletteSkinsPassingPointer(durationSec, isActiveCheck = () => isS
   const track = document.getElementById(trackId);
   const pointer = track?.parentElement?.querySelector('.roulette-pointer');
   if (!track || !pointer) return;
-  const items = Array.from(track.querySelectorAll('.card-wrap'));
+  const items = Array.from(track.querySelectorAll('.skin-wrap'));
   if (!items.length) return;
 
   const startTime = performance.now();
@@ -1069,7 +1053,7 @@ function pickDuelCaseAndSpin(playerCaseId) {
       const track = document.getElementById(`duel-track-${idx}`);
       if (!track) return;
       track.style.transition = 'transform 4.2s cubic-bezier(0.12, 0.88, 0.22, 1)';
-      track.style.transform = `translateX(-${38 * 197 + 92.5}px)`;
+      track.style.transform = `translateX(-${38 * 162 + 75}px)`;
     });
     trackRouletteSkinsPassingPointer(4.2, () => isDuelRunning, 'duel-track-0');
   }, 30);
@@ -1302,7 +1286,7 @@ function executeCraft() {
   renderCraftUI();
 }
 
-// === ПРОСМОТР ТОЛЬКО КАРТИНКИ СКИНА В ИНВЕНТАРЕ ===
+// === ПРОСМОТР ТОЛЬКО КАРТИНКИ СКИНА ===
 function openSkinImageModal(skinId) {
   const skin = getSkinById(skinId);
   if (!skin) return;
@@ -1319,7 +1303,7 @@ function closeSkinPreviewModal(e) {
 }
 
 // === АДМИНКА ===
-const DEFAULT_RARITY_PALETTE = ['#e84393', '#d32ce6', '#8847ff', '#4b69ff', '#facc15'];
+const DEFAULT_RARITY_PALETTE = ['#eb4b4b', '#d32ce6', '#8847ff', '#4b69ff', '#facc15'];
 
 function renderNewRarityColorInputs(preset = null) {
   const box = document.getElementById('new-rar-colors-box');
@@ -1502,13 +1486,13 @@ function updateSkinPreview() {
     weapon: document.getElementById('new-skin-weapon').value.trim() || 'AK-47',
     name: document.getElementById('new-skin-name').value.trim() || 'Redline',
     rarity: document.getElementById('new-skin-rarity').value || state.rarities[0].id,
-    price: Number(document.getElementById('new-skin-price').value) || 2520,
+    price: Number(document.getElementById('new-skin-price').value) || 1200,
     hasStatTrak: Boolean(document.getElementById('new-skin-has-st').checked),
     hasSouvenir: Boolean(document.getElementById('new-skin-has-souv').checked),
-    img: document.getElementById('new-skin-img').value.trim() || ''
+    img: document.getElementById('new-skin-img').value.trim() || 'https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'
   };
   const ed = document.getElementById('preview-edition')?.value || 'normal';
-  const wr = document.getElementById('preview-wear')?.value || 'FT';
+  const wr = document.getElementById('preview-wear')?.value || 'FN';
   box.innerHTML = createSkinTileHTML(sample, ed, wr);
 }
 
@@ -1524,7 +1508,7 @@ function adminAddSkin() {
     price: Number(document.getElementById('new-skin-price').value) || 1000,
     hasStatTrak: Boolean(document.getElementById('new-skin-has-st').checked),
     hasSouvenir: Boolean(document.getElementById('new-skin-has-souv').checked),
-    img: document.getElementById('new-skin-img').value.trim() || ''
+    img: document.getElementById('new-skin-img').value.trim() || 'https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'
   });
   saveState(true); renderAdminUI();
 }
@@ -1557,7 +1541,7 @@ function updateEditSkinPreview() {
     price: Number(document.getElementById('edit-skin-price').value) || 1000,
     hasStatTrak: Boolean(document.getElementById('edit-skin-has-st').checked),
     hasSouvenir: Boolean(document.getElementById('edit-skin-has-souv').checked),
-    img: document.getElementById('edit-skin-img').value.trim() || ''
+    img: document.getElementById('edit-skin-img').value.trim() || 'https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'
   };
   document.getElementById('edit-skin-preview').innerHTML = createSkinTileHTML(sample, sample.hasSouvenir ? 'souvenir' : sample.hasStatTrak ? 'stattrak' : 'normal', 'FN');
 }
