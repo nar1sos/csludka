@@ -173,7 +173,10 @@
             <div class="section-header">
               <h3>Все цели (<span id="upg-targets-count">0</span>)</h3>
               <div class="upgrade-target-controls">
+                <input type="number" id="upg-min-price" class="price-search-input" placeholder="Цена от ₽" min="0" step="any" oninput="renderUpgradeTargets()">
+                <input type="number" id="upg-max-price" class="price-search-input" placeholder="Цена до ₽" min="0" step="any" oninput="renderUpgradeTargets()">
                 <input type="text" id="upg-target-search" class="upg-search-input" placeholder="Поиск по оружию или скину..." oninput="renderUpgradeTargets()">
+                <button type="button" class="secondary-btn" onclick="resetUpgradePriceFilter()">Сброс</button>
                 <select id="upg-target-edition-filter" onchange="renderUpgradeTargets()">
                   <option value="all">Все (Base / ST / Souvenir)</option>
                   <option value="normal">Обычные</option>
@@ -284,10 +287,6 @@
         <div class="section-header">
           <h2>Твой инвентарь</h2>
           <div class="sort-controls">
-            <input type="number" id="col-min-price" class="price-search-input" placeholder="Цена от ₽" min="0" step="any" oninput="renderCollection()">
-            <input type="number" id="col-max-price" class="price-search-input" placeholder="Цена до ₽" min="0" step="any" oninput="renderCollection()">
-            <input type="text" id="col-search-name" class="price-search-input" placeholder="Название / оружие..." oninput="renderCollection()">
-            <button type="button" class="secondary-btn" onclick="resetCollectionPriceFilter()">Сброс</button>
             <select id="col-sort" onchange="renderCollection()">
               <option value="price-desc">Сначала дорогие</option>
               <option value="price-asc">Сначала дешёвые</option>
