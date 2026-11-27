@@ -169,9 +169,17 @@ function getSkinById(id) { return skinMapCache.get(id); }
 function getWearObj(code) { return wearMapCache.get(code) || state.wears[0] || { code: 'FN', label: 'Factory New', priceMult: 1, weight: 100 }; }
 
 function getRarityGradientColors(rar) {
-  if (!rar) return ['#4b69ff', '#14161c'];
+  if (!rar) return ['#4b69ff', '#14171f'];
   if (Array.isArray(rar.gradientColors) && rar.gradientColors.length > 0) return rar.gradientColors.slice(0, 5);
-  return [rar.color || '#4b69ff', rar.bg || '#14161c'];
+  return [rar.color || '#4b69ff', rar.bg || '#14171f'];
+}
+
+function buildRarityBgStyle(rar) {
+  const cols = getRarityGradientColors(rar);
+  if (cols.length >= 2) {
+    return `linear-gradient(155deg, ${cols[0]}33 0%, ${cols[cols.length - 1]} 75%)`;
+  }
+  return `linear-gradient(155deg, ${cols[0]}33 0%, #14171f 75%)`;
 }
 
 function sanitizeChanceInput(rawVal) {
@@ -237,7 +245,7 @@ function saveState(markCatalogDirty = false) {
 
 function updateCloudSyncBadge() {
   const btn = document.getElementById('push-cloud-catalog-btn');
-  if (btn) btn.textContent = hasLocalCatalogEdits ? '☁ Залить в облако (*)' : '☁ Залить всё в облако';
+  if (btn) btn.textContent = hasLocalCatalogEdits ? '☁ Залить в облако (*)' : '☁ Залить в облако';
 }
 
 function updateTopBar() {
@@ -320,6 +328,10 @@ function formatSkinTitle(skin) {
   return n || w || 'Skin';
 }
 
+function escapeHtmlAttr(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
 function sortItems(items, sortMode) {
   return [...items].sort((a, b) => {
     const skinA = a.skin || a;
@@ -337,31 +349,43 @@ function sortItems(items, sortMode) {
   });
 }
 
+// === КАРТОЧКА СКИНА В СТИЛЕ ГД ЛУДКИ ===
 function createSkinTileHTML(skin, edition = 'normal', wearCode = 'FN', extraClass = '', clickAttr = '', actionBtnHTML = '') {
   const rar = getRarityObj(skin.rarity);
   const price = getSkinPrice(skin, edition, wearCode);
   const edClass = edition === 'souvenir' ? 'is-souvenir' : edition === 'stattrak' ? 'is-stattrak' : '';
+  const titleText = formatSkinTitle(skin);
+  const safeTitle = escapeHtmlAttr(titleText);
+  const rarBg = buildRarityBgStyle(rar);
 
   const badges = [];
   if (edition === 'stattrak') badges.push('<span class="st-pill">ST™</span>');
-  if (edition === 'souvenir') badges.push('<span class="souv-pill">★ SOUVENIR</span>');
+  if (edition === 'souvenir') badges.push('<span class="souv-pill">★ SOUV</span>');
 
   return `
-    <div class="skin-wrap">
-      <div class="cs-skin-tile ${edClass} ${extraClass}"
-           style="--rar-color: ${rar.color};"
+    <div class="card-wrap">
+      <div class="cs-skin-card ${edClass} ${extraClass}"
+           style="--rar-color: ${rar.color}; --rar-bg: ${rarBg};"
            ${clickAttr}>
-        <div class="skin-top-row">
-          <span class="wear-tag">${wearCode}</span>
-          <span class="skin-rarity-dot">${rar.name}</span>
+        <div class="skin-card-top">
+          <span class="wear-badge">${wearCode}</span>
+          <span class="rarity-label-top">${rar.name}</span>
         </div>
-        <img class="skin-thumb" loading="lazy" decoding="async" draggable="false" src="${skin.img}" alt="${formatSkinTitle(skin)}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'">
-        <div class="skin-info-block">
-          <div class="skin-weapon">${skin.weapon || 'Weapon'}</div>
-          <div class="skin-title">${skin.name}</div>
+        <div class="skin-img-frame">
+          <img loading="lazy"
+               decoding="async"
+               draggable="false"
+               src="${escapeHtmlAttr(skin.img)}"
+               alt="${safeTitle}"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <span class="skin-img-fallback" style="display:none;">${safeTitle}</span>
         </div>
-        <div class="skin-bottom-area">
-          <span class="skin-price">${price} ₽</span>
+        <div class="skin-text-block">
+          <div class="skin-weapon-line">${skin.weapon || 'Weapon'}</div>
+          <div class="skin-name-line">${skin.name}</div>
+        </div>
+        <div class="skin-footer-line">
+          <span class="skin-price-val">${price} ₽</span>
           <div>${badges.join('')}</div>
         </div>
       </div>
@@ -375,6 +399,7 @@ function createUpgradeSquareTileHTML(skin, edition = 'normal', wearCode = 'FN', 
   const price = getSkinPrice(skin, edition, wearCode);
   const selClass = isSelected ? 'selected' : '';
   const edTag = edition === 'souvenir' ? 'SOUV ' : edition === 'stattrak' ? 'ST ' : '';
+  const safeTitle = escapeHtmlAttr(formatSkinTitle(skin));
 
   return `
     <div class="upg-square-tile ${selClass}"
@@ -383,9 +408,9 @@ function createUpgradeSquareTileHTML(skin, edition = 'normal', wearCode = 'FN', 
          ${clickAttr}>
       <div class="upg-tile-top">
         <span class="upg-tile-price">${price} ₽</span>
-        <span class="wear-tag" style="font-size:9px;padding:1px 4px;">${edTag}${wearCode}</span>
+        <span class="wear-badge" style="font-size:9px;padding:1px 4px;">${edTag}${wearCode}</span>
       </div>
-      <img class="upg-tile-img" loading="lazy" decoding="async" draggable="false" src="${skin.img}" alt="${formatSkinTitle(skin)}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS'">
+      <img class="upg-tile-img" loading="lazy" decoding="async" draggable="false" src="${escapeHtmlAttr(skin.img)}" alt="${safeTitle}" onerror="this.src='https://placehold.co/320x200/181a20/ffffff?text=CS'">
       <div class="upg-tile-name">${formatSkinTitle(skin)}</div>
     </div>
   `;
@@ -480,7 +505,7 @@ async function pushCatalogToCloud() {
     localStorage.setItem('cs_dirty_catalog', '0');
     updateCloudSyncBadge();
     SoundFX.sell();
-    setAdminBalanceStatus('Каталог CS сохранён в облако JSONBin.io');
+    setAdminBalanceStatus('Каталог сохранён в облако JSONBin.io');
   } catch (err) {
     console.error(err);
     setAdminBalanceStatus('Ошибка загрузки в облако: проверь Bin ID и ключ', true);
@@ -641,7 +666,9 @@ function renderCaseContents() {
   if (!c) return;
   const sortMode = document.getElementById('case-contents-sort').value;
   const skins = c.cardIds.map(getSkinById).filter(Boolean);
-  document.getElementById('case-contents-grid').innerHTML = sortItems(skins, sortMode).map(skin => createSkinTileHTML(skin, 'normal', 'FN')).join('');
+  document.getElementById('case-contents-grid').innerHTML = sortItems(skins, sortMode)
+    .map(skin => createSkinTileHTML(skin, 'normal', 'FN', '', `onclick="openSkinDetailsModal('${skin.id}', 'normal', 'FN')"`))
+    .join('');
 }
 
 function rollWeightedSkin(poolSkins) {
@@ -662,9 +689,9 @@ function rollWeightedSkin(poolSkins) {
 }
 
 function getRouletteStepWidth() {
-  const firstTile = document.querySelector('.roulette-track .skin-wrap');
+  const firstTile = document.querySelector('.roulette-track .card-wrap');
   const trackEl = firstTile ? firstTile.parentElement : null;
-  const tileW = firstTile ? firstTile.getBoundingClientRect().width : 185;
+  const tileW = firstTile ? firstTile.getBoundingClientRect().width : 210;
   let gapW = 12;
   if (trackEl) {
     const g = parseFloat(getComputedStyle(trackEl).columnGap || getComputedStyle(trackEl).gap);
@@ -688,7 +715,7 @@ function trackRouletteSkinsPassingPointer(durationSec, isActiveCheck = () => isS
   const track = document.getElementById(trackId);
   const pointer = track?.parentElement?.querySelector('.roulette-pointer');
   if (!track || !pointer) return;
-  const items = Array.from(track.querySelectorAll('.skin-wrap'));
+  const items = Array.from(track.querySelectorAll('.card-wrap'));
   if (!items.length) return;
 
   const startTime = performance.now();
@@ -1053,7 +1080,7 @@ function pickDuelCaseAndSpin(playerCaseId) {
       const track = document.getElementById(`duel-track-${idx}`);
       if (!track) return;
       track.style.transition = 'transform 4.2s cubic-bezier(0.12, 0.88, 0.22, 1)';
-      track.style.transform = `translateX(-${38 * 162 + 75}px)`;
+      track.style.transform = `translateX(-${38 * 197 + 92.5}px)`;
     });
     trackRouletteSkinsPassingPointer(4.2, () => isDuelRunning, 'duel-track-0');
   }, 30);
@@ -1169,7 +1196,7 @@ function renderCollection() {
     const wr = item.wear || 'FN';
     const price = getSkinPrice(item.skin, ed, wr);
     const sellBtn = `<button class="secondary-btn" style="width:100%;margin-top:6px;padding:6px 8px;font-size:11px;" onclick="event.stopPropagation(); sellInventorySkin('${item.uid}')">Продать за ${price} ₽</button>`;
-    return createSkinTileHTML(item.skin, ed, wr, '', `onclick="openSkinImageModal('${item.skin.id}')"`, sellBtn);
+    return createSkinTileHTML(item.skin, ed, wr, '', `onclick="openSkinDetailsModal('${item.skin.id}', '${ed}', '${wr}', '${item.uid}')"`, sellBtn);
   }).join('');
 }
 
@@ -1286,14 +1313,46 @@ function executeCraft() {
   renderCraftUI();
 }
 
-// === ПРОСМОТР ТОЛЬКО КАРТИНКИ СКИНА ===
-function openSkinImageModal(skinId) {
+// === ХАРАКТЕРИСТИКИ СКИНА (ТОЛЬКО СТАТИЧНАЯ КАРТИНКА + ХАРАКТЕРИСТИКИ) ===
+function openSkinDetailsModal(skinId, edition = 'normal', wearCode = 'FN', invUid = null) {
   const skin = getSkinById(skinId);
   if (!skin) return;
   SoundFX.click();
+
+  const rar = getRarityObj(skin.rarity);
+  const wearObj = getWearObj(wearCode);
+  const price = getSkinPrice(skin, edition, wearCode);
+  const edLabel = edition === 'souvenir' ? '★ Сувенир' : edition === 'stattrak' ? 'StatTrak™' : 'Обычный';
+
+  const cardEl = document.getElementById('skin-detail-card');
+  cardEl.style.setProperty('--rar-color', rar.color);
+  cardEl.style.setProperty('--rar-bg', buildRarityBgStyle(rar));
+
+  document.getElementById('detail-wear-badge').textContent = wearCode;
+  const rarTop = document.getElementById('detail-rarity-badge');
+  rarTop.textContent = rar.name;
+  rarTop.style.color = rar.color;
+
   const img = document.getElementById('skin-preview-only-img');
   img.src = skin.img;
   img.alt = formatSkinTitle(skin);
+
+  document.getElementById('detail-weapon-text').textContent = skin.weapon || 'Оружие';
+  document.getElementById('detail-skin-title').textContent = skin.name;
+  document.getElementById('detail-price-val').textContent = price + ' ₽';
+  document.getElementById('detail-wear-label').textContent = `${wearCode} (${wearObj.label || wearCode})`;
+  document.getElementById('detail-edition-label').textContent = edLabel;
+  const rarLabel = document.getElementById('detail-rarity-label');
+  rarLabel.textContent = rar.name;
+  rarLabel.style.color = rar.color;
+
+  const actionsEl = document.getElementById('detail-modal-actions');
+  if (invUid) {
+    actionsEl.innerHTML = `<button class="primary-btn" onclick="sellInventorySkin('${invUid}'); closeSkinPreviewModal();">Продать за ${price} ₽</button>`;
+  } else {
+    actionsEl.innerHTML = `<button class="secondary-btn" onclick="closeSkinPreviewModal()">Закрыть</button>`;
+  }
+
   document.getElementById('skin-preview-modal').classList.remove('hidden');
 }
 
@@ -1303,7 +1362,7 @@ function closeSkinPreviewModal(e) {
 }
 
 // === АДМИНКА ===
-const DEFAULT_RARITY_PALETTE = ['#eb4b4b', '#d32ce6', '#8847ff', '#4b69ff', '#facc15'];
+const DEFAULT_RARITY_PALETTE = ['#e84393', '#d32ce6', '#8847ff', '#4b69ff', '#facc15'];
 
 function renderNewRarityColorInputs(preset = null) {
   const box = document.getElementById('new-rar-colors-box');
@@ -1486,13 +1545,13 @@ function updateSkinPreview() {
     weapon: document.getElementById('new-skin-weapon').value.trim() || 'AK-47',
     name: document.getElementById('new-skin-name').value.trim() || 'Redline',
     rarity: document.getElementById('new-skin-rarity').value || state.rarities[0].id,
-    price: Number(document.getElementById('new-skin-price').value) || 1200,
+    price: Number(document.getElementById('new-skin-price').value) || 2520,
     hasStatTrak: Boolean(document.getElementById('new-skin-has-st').checked),
     hasSouvenir: Boolean(document.getElementById('new-skin-has-souv').checked),
-    img: document.getElementById('new-skin-img').value.trim() || 'https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'
+    img: document.getElementById('new-skin-img').value.trim() || ''
   };
   const ed = document.getElementById('preview-edition')?.value || 'normal';
-  const wr = document.getElementById('preview-wear')?.value || 'FN';
+  const wr = document.getElementById('preview-wear')?.value || 'FT';
   box.innerHTML = createSkinTileHTML(sample, ed, wr);
 }
 
@@ -1508,7 +1567,7 @@ function adminAddSkin() {
     price: Number(document.getElementById('new-skin-price').value) || 1000,
     hasStatTrak: Boolean(document.getElementById('new-skin-has-st').checked),
     hasSouvenir: Boolean(document.getElementById('new-skin-has-souv').checked),
-    img: document.getElementById('new-skin-img').value.trim() || 'https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'
+    img: document.getElementById('new-skin-img').value.trim() || ''
   });
   saveState(true); renderAdminUI();
 }
@@ -1541,7 +1600,7 @@ function updateEditSkinPreview() {
     price: Number(document.getElementById('edit-skin-price').value) || 1000,
     hasStatTrak: Boolean(document.getElementById('edit-skin-has-st').checked),
     hasSouvenir: Boolean(document.getElementById('edit-skin-has-souv').checked),
-    img: document.getElementById('edit-skin-img').value.trim() || 'https://placehold.co/320x200/181a20/ffffff?text=CS+SKIN'
+    img: document.getElementById('edit-skin-img').value.trim() || ''
   };
   document.getElementById('edit-skin-preview').innerHTML = createSkinTileHTML(sample, sample.hasSouvenir ? 'souvenir' : sample.hasStatTrak ? 'stattrak' : 'normal', 'FN');
 }
