@@ -317,13 +317,23 @@ select, input[type="text"], input[type="number"], input[type="password"] {
   border-color: var(--accent-gold);
 }
 
-/* ПЛАШКИ ЦЕЛЕЙ В АПГРЕЙДЕ (БЕЗ ВРАЩЕНИЯ ПО КЛИКУ) */
+/* ЕДИНЫЕ ПЛАШКИ КАРТОЧЕК: АПГРЕЙД, ИНВЕНТАРЬ И ИНВЕНТАРЬ АПГРЕЙДА */
 #upgrade-target-cards.upg-square-grid {
   grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
   gap: 12px;
 }
 
-.upg-target-tile {
+#collection-grid.collection-compact-grid {
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  gap: 13px;
+}
+
+#upgrade-my-cards.upg-square-grid {
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
+}
+
+.skin-tile-card {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1.04;
@@ -341,11 +351,11 @@ select, input[type="text"], input[type="number"], input[type="password"] {
   cursor: pointer;
   transition: transform 0.12s ease, border-color 0.12s ease;
 }
-.upg-target-tile:hover {
+.skin-tile-card:hover {
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.35);
 }
-.upg-target-tile.selected {
+.skin-tile-card.selected {
   border-color: var(--accent-gold);
   box-shadow: 0 0 0 2px rgba(245, 185, 21, 0.45);
 }
@@ -423,7 +433,63 @@ select, input[type="text"], input[type="number"], input[type="password"] {
   bottom: 0;
   height: 5px;
   border-radius: 3px 3px 0 0;
-  background: var(--rar-bar, #d946ef);
-  box-shadow: 0 -1px 10px var(--rar-bar-glow, rgba(217, 70, 239, 0.65));
+  background: var(--rar-bar, #eab308);
+  box-shadow: 0 -1px 10px var(--rar-bar-glow, rgba(234, 179, 8, 0.65));
   z-index: 6;
+}
+
+/* Кнопка продажи внутри плашки инвентаря */
+.inv-tile-card .inv-sell-btn {
+  width: 100%;
+  margin-top: 5px;
+  padding: 4px 6px;
+  font-size: 10.5px;
+  border-radius: 5px;
+  background: rgba(14, 15, 18, 0.82);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.inv-tile-card .inv-sell-btn:hover {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+/* Уменьшенная плашка для блока «Твой инвентарь» внутри Апгрейда */
+.upg-my-tile {
+  padding: 6px 7px 9px;
+}
+.upg-my-tile .inv-tile-price {
+  font-size: 10px;
+}
+.upg-my-tile .inv-tile-radar {
+  background-image: radial-gradient(circle at 64% 52%, transparent 18px, rgba(255, 255, 255, 0.09) 19px, transparent 20px),
+                    radial-gradient(circle at 64% 52%, transparent 30px, rgba(255, 255, 255, 0.07) 31px, transparent 32px);
+}
+.upg-my-tile .inv-tile-img {
+  width: 90%;
+  max-height: 50%;
+}
+.upg-my-tile .inv-tile-footer {
+  padding-bottom: 2px;
+}
+.upg-my-tile .inv-tile-weapon {
+  font-size: 8.5px;
+}
+.upg-my-tile .inv-tile-name {
+  font-size: 10px;
+}
+.upg-my-tile .inv-tile-rarity-bar {
+  left: 5px;
+  right: 5px;
+  height: 3.5px;
+}
+
+@media (max-width: 768px) {
+  #upgrade-target-cards.upg-square-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  #upgrade-my-cards.upg-square-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
 }
