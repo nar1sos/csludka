@@ -27,6 +27,7 @@
     </nav>
 
     <div class="user-panel">
+      <button id="topbar-cloud-upload-btn" type="button" class="secondary-btn cloud-upload-btn" onclick="pushCatalogToCloud()" title="Залить в облако">☁ Залить в облако</button>
       <input type="text" id="nickname-input" class="nick-input" placeholder="Никнейм" maxlength="18" onchange="saveNickname()">
       <div class="balance-box">
         <span class="balance-icon">₽</span>
@@ -283,6 +284,10 @@
         <div class="section-header">
           <h2>Твой инвентарь</h2>
           <div class="sort-controls">
+            <input type="number" id="col-min-price" class="price-search-input" placeholder="Цена от ₽" min="0" step="any" oninput="renderCollection()">
+            <input type="number" id="col-max-price" class="price-search-input" placeholder="Цена до ₽" min="0" step="any" oninput="renderCollection()">
+            <input type="text" id="col-search-name" class="price-search-input" placeholder="Название / оружие..." oninput="renderCollection()">
+            <button type="button" class="secondary-btn" onclick="resetCollectionPriceFilter()">Сброс</button>
             <select id="col-sort" onchange="renderCollection()">
               <option value="price-desc">Сначала дорогие</option>
               <option value="price-asc">Сначала дешёвые</option>
